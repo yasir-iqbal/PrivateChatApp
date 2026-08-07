@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "313451247671",
+    "project_id": "privatechat-9cbb7",
+    "storage_bucket": "privatechat-9cbb7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313451247671:android:35c64f6f6d21f4b7e1e7b2",
+        "android_client_info": {
+          "package_name": "com.messenger.privatechat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "313451247671-k023p2n390iujg6lmduuj7ri23kb5sqt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZewnAclncGde2daB4suMD5hAvVcnLGXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "313451247671-k023p2n390iujg6lmduuj7ri23kb5sqt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "313451247671-ngcjdopg9a96jlq7tqj7cbpn7f1b2g18.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.messenger.privatechat"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
