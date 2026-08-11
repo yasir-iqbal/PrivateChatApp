@@ -9,7 +9,9 @@ export type AuthRepository = {
   sendEmailVerification: (user: User) => Promise<void>;
   updateDisplayName: (user: User, displayName: string) => Promise<void>;
   updatePhotoURL: (user: User, photoURL: string) => Promise<void>;
-  reloadUser: (user: User) => Promise<void>;
+  // Resolves to the *refreshed* user, which is a different object than the one
+  // passed in — see the implementation note below.
+  reloadUser: (user: User) => Promise<User | null>;
   subscribeToAuthState: (callback: (user: User | null) => void) => Unsubscribe;
 };
 
@@ -52,6 +54,11 @@ export const firebaseAuthRepository: AuthRepository = {
 
   async reloadUser(user) {
     await firebaseAuth.reload(user);
+    // reload()/updateProfile() never mutate the User they were called on — its
+    // fields come from a readonly snapshot taken at construction. They install
+    // a brand-new User instance as auth.currentUser instead, so the fresh
+    // emailVerified/photoURL values are only readable from there.
+    return firebaseAuth.getAuth().currentUser;
   },
 
   subscribeToAuthState(callback) {

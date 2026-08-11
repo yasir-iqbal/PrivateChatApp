@@ -34,7 +34,7 @@ export function RootNavigator() {
   const { firebaseUser, authUser, initializing, refresh } = useAuthState();
 
   const needsProfileStatus = !!authUser?.emailVerified && !authUser?.photoURL;
-  const { hasSkipped, loading: profileStatusLoading } = useProfileSetupStatus(
+  const { hasSkipped, loading: profileStatusLoading, markSkipped } = useProfileSetupStatus(
     needsProfileStatus ? authUser?.uid : undefined,
   );
 
@@ -76,7 +76,11 @@ export function RootNavigator() {
         ) : needsProfileStatus && !hasSkipped ? (
           <Stack.Screen name="ProfileSetup">
             {() => (
-              <ProfileSetupScreen firebaseUser={firebaseUser!} refreshAuthState={refresh} />
+              <ProfileSetupScreen
+                firebaseUser={firebaseUser!}
+                refreshAuthState={refresh}
+                onSkip={markSkipped}
+              />
             )}
           </Stack.Screen>
         ) : (

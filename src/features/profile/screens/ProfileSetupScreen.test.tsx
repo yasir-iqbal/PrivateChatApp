@@ -4,13 +4,10 @@ import type { User } from '@react-native-firebase/auth';
 import { ProfileSetupScreen } from './ProfileSetupScreen';
 import { ThemeProvider } from '../../../shared/theme';
 import { useProfileSetup } from '../hooks/useProfileSetup';
-import { useProfileSetupStatus } from '../hooks/useProfileSetupStatus';
 
 jest.mock('../hooks/useProfileSetup');
-jest.mock('../hooks/useProfileSetupStatus');
 
 const mockUseProfileSetup = useProfileSetup as jest.MockedFunction<typeof useProfileSetup>;
-const mockUseProfileSetupStatus = useProfileSetupStatus as jest.MockedFunction<typeof useProfileSetupStatus>;
 
 const fakeUser = { uid: 'uid-1' } as User;
 
@@ -18,50 +15,43 @@ function mutationStub(overrides: Partial<ReturnType<typeof useProfileSetup>['upl
   return { mutate: jest.fn(), isPending: false, error: null, ...overrides } as any;
 }
 
+function renderScreen(onSkip = jest.fn()) {
+  render(
+    <ThemeProvider>
+      <ProfileSetupScreen firebaseUser={fakeUser} refreshAuthState={jest.fn()} onSkip={onSkip} />
+    </ThemeProvider>,
+  );
+  return { onSkip };
+}
+
 describe('ProfileSetupScreen', () => {
   it('triggers the avatar upload when "Choose photo" is pressed', () => {
     const uploadAvatar = mutationStub();
     mockUseProfileSetup.mockReturnValue({ uploadAvatar });
-    mockUseProfileSetupStatus.mockReturnValue({ hasSkipped: false, loading: false, markSkipped: jest.fn() });
 
-    render(
-      <ThemeProvider>
-        <ProfileSetupScreen firebaseUser={fakeUser} refreshAuthState={jest.fn()} />
-      </ThemeProvider>,
-    );
+    renderScreen();
 
     fireEvent.press(screen.getByText('Choose photo'));
 
     expect(uploadAvatar.mutate).toHaveBeenCalled();
   });
 
-  it('calls markSkipped when "Skip for now" is pressed', () => {
-    const markSkipped = jest.fn();
+  it('calls the navigator-owned onSkip when "Skip for now" is pressed', () => {
     mockUseProfileSetup.mockReturnValue({ uploadAvatar: mutationStub() });
-    mockUseProfileSetupStatus.mockReturnValue({ hasSkipped: false, loading: false, markSkipped });
 
-    render(
-      <ThemeProvider>
-        <ProfileSetupScreen firebaseUser={fakeUser} refreshAuthState={jest.fn()} />
-      </ThemeProvider>,
-    );
+    const { onSkip } = renderScreen();
 
     fireEvent.press(screen.getByText('Skip for now'));
 
-    expect(markSkipped).toHaveBeenCalled();
+    expect(onSkip).toHaveBeenCalled();
   });
 
   it('shows an error message when the upload fails', () => {
     mockUseProfileSetup.mockReturnValue({
       uploadAvatar: mutationStub({ error: new Error('Upload failed') }),
     });
-    mockUseProfileSetupStatus.mockReturnValue({ hasSkipped: false, loading: false, markSkipped: jest.fn() });
 
-    render(
-      <ThemeProvider>
-        <ProfileSetupScreen firebaseUser={fakeUser} refreshAuthState={jest.fn()} />
-      </ThemeProvider>,
-    );
+    renderScreen();
 
     expect(screen.getByText('Upload failed')).toBeTruthy();
   });

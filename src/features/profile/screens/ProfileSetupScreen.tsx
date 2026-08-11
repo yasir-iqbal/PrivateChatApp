@@ -5,17 +5,18 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Button, ScreenContainer } from '../../../shared/components';
 import { useTheme } from '../../../shared/theme';
 import { useProfileSetup } from '../hooks/useProfileSetup';
-import { useProfileSetupStatus } from '../hooks/useProfileSetupStatus';
 
 type Props = {
   firebaseUser: User;
   refreshAuthState: () => Promise<void>;
+  // Owned by the navigator, which gates on the same skip state — a second
+  // useProfileSetupStatus() here would only update this screen's own copy.
+  onSkip: () => void;
 };
 
-export function ProfileSetupScreen({ firebaseUser, refreshAuthState }: Props) {
+export function ProfileSetupScreen({ firebaseUser, refreshAuthState, onSkip }: Props) {
   const theme = useTheme();
   const { uploadAvatar } = useProfileSetup(firebaseUser, refreshAuthState);
-  const { markSkipped } = useProfileSetupStatus(firebaseUser.uid);
 
   return (
     <ScreenContainer style={styles.container}>
@@ -70,7 +71,7 @@ export function ProfileSetupScreen({ firebaseUser, refreshAuthState }: Props) {
         <Button
           label="Skip for now"
           variant="text"
-          onPress={() => markSkipped()}
+          onPress={onSkip}
           style={{ marginTop: theme.spacing.sm }}
         />
       </View>
