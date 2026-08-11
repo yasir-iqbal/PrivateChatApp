@@ -26,7 +26,11 @@ describe('VerifyEmailScreen', () => {
 
     render(
       <ThemeProvider>
-        <VerifyEmailScreen firebaseUser={fakeFirebaseUser} authUser={fakeAuthUser} />
+        <VerifyEmailScreen
+          firebaseUser={fakeFirebaseUser}
+          authUser={fakeAuthUser}
+          refreshAuthState={jest.fn().mockResolvedValue(undefined)}
+        />
       </ThemeProvider>,
     );
 
@@ -51,7 +55,11 @@ describe('VerifyEmailScreen', () => {
 
     render(
       <ThemeProvider>
-        <VerifyEmailScreen firebaseUser={fakeFirebaseUser} authUser={fakeAuthUser} />
+        <VerifyEmailScreen
+          firebaseUser={fakeFirebaseUser}
+          authUser={fakeAuthUser}
+          refreshAuthState={jest.fn().mockResolvedValue(undefined)}
+        />
       </ThemeProvider>,
     );
 

@@ -10,11 +10,12 @@ import type { User } from '@react-native-firebase/auth';
 type Props = {
   firebaseUser: User;
   authUser: AuthUser;
+  refreshAuthState: () => Promise<void>;
 };
 
-export function VerifyEmailScreen({ firebaseUser, authUser }: Props) {
+export function VerifyEmailScreen({ firebaseUser, authUser, refreshAuthState }: Props) {
   const theme = useTheme();
-  const { resend, refresh, signOut } = useVerifyEmail(firebaseUser);
+  const { resend, refresh, signOut } = useVerifyEmail(firebaseUser, refreshAuthState);
 
   return (
     <ScreenContainer style={styles.container}>

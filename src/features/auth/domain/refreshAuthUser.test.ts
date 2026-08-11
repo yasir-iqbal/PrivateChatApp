@@ -12,6 +12,7 @@ describe('refreshAuthUser', () => {
       signOut: jest.fn(),
       sendEmailVerification: jest.fn(),
       updateDisplayName: jest.fn(),
+      updatePhotoURL: jest.fn(),
       reloadUser: jest.fn().mockResolvedValue(undefined),
       subscribeToAuthState: jest.fn(),
     };

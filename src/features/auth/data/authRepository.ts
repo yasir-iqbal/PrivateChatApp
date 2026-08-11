@@ -8,6 +8,7 @@ export type AuthRepository = {
   signOut: () => Promise<void>;
   sendEmailVerification: (user: User) => Promise<void>;
   updateDisplayName: (user: User, displayName: string) => Promise<void>;
+  updatePhotoURL: (user: User, photoURL: string) => Promise<void>;
   reloadUser: (user: User) => Promise<void>;
   subscribeToAuthState: (callback: (user: User | null) => void) => Unsubscribe;
 };
@@ -43,6 +44,10 @@ export const firebaseAuthRepository: AuthRepository = {
 
   async updateDisplayName(user, displayName) {
     await firebaseAuth.updateProfile(user, { displayName });
+  },
+
+  async updatePhotoURL(user, photoURL) {
+    await firebaseAuth.updateProfile(user, { photoURL });
   },
 
   async reloadUser(user) {

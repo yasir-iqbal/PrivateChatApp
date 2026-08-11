@@ -1,6 +1,10 @@
 module.exports = {
   preset: 'jest-expo',
   passWithNoTests: true,
+  clearMocks: true,
+  // Full parallelism gets flaky (timeouts) alongside other heavy local
+  // processes (emulators, Metro); cap workers for consistent runs.
+  maxWorkers: '50%',
   // @tanstack/react-query's focusManager/onlineManager register process-level
   // listeners that outlive per-test QueryClient.unmount() calls, leaving Jest
   // unable to exit on its own even with correct test cleanup.

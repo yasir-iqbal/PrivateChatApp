@@ -10,6 +10,7 @@ function makeFakeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     signOut: jest.fn(),
     sendEmailVerification: jest.fn(),
     updateDisplayName: jest.fn(),
+    updatePhotoURL: jest.fn(),
     reloadUser: jest.fn(),
     subscribeToAuthState: jest.fn(),
     ...overrides,

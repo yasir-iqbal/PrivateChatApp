@@ -11,6 +11,7 @@ describe('observeAuthState', () => {
       signOut: jest.fn(),
       sendEmailVerification: jest.fn(),
       updateDisplayName: jest.fn(),
+      updatePhotoURL: jest.fn(),
       reloadUser: jest.fn(),
       subscribeToAuthState: jest.fn().mockReturnValue(unsubscribe),
     };

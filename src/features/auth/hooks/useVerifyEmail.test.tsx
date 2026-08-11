@@ -3,17 +3,13 @@ import type { User } from '@react-native-firebase/auth';
 
 import { useVerifyEmail } from './useVerifyEmail';
 import { logOut } from '../domain/logOut';
-import { refreshAuthUser } from '../domain/refreshAuthUser';
 import { resendVerificationEmail } from '../domain/resendVerificationEmail';
 import { createQueryClientWrapper } from '../../../shared/testing/createQueryClientWrapper';
-import type { AuthUser } from '../domain/authUser';
 
 jest.mock('../domain/logOut');
-jest.mock('../domain/refreshAuthUser');
 jest.mock('../domain/resendVerificationEmail');
 
 const mockLogOut = logOut as jest.MockedFunction<typeof logOut>;
-const mockRefresh = refreshAuthUser as jest.MockedFunction<typeof refreshAuthUser>;
 const mockResend = resendVerificationEmail as jest.MockedFunction<typeof resendVerificationEmail>;
 
 const fakeUser = { uid: 'uid-1' } as User;
@@ -23,7 +19,8 @@ describe('useVerifyEmail', () => {
 
   it('resends the verification email for the given user', async () => {
     mockResend.mockResolvedValue(undefined);
-    const { result } = renderHook(() => useVerifyEmail(fakeUser), { wrapper });
+    const refreshAuthState = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useVerifyEmail(fakeUser, refreshAuthState), { wrapper });
 
     await act(async () => {
       await result.current.resend.mutateAsync();
@@ -33,22 +30,22 @@ describe('useVerifyEmail', () => {
     await waitFor(() => expect(result.current.resend.isSuccess).toBe(true));
   });
 
-  it('refreshes the auth user', async () => {
-    const fakeAuthUser: AuthUser = { uid: 'uid-1', email: 'a@b.com', displayName: null, photoURL: null, emailVerified: true };
-    mockRefresh.mockResolvedValue(fakeAuthUser);
-    const { result } = renderHook(() => useVerifyEmail(fakeUser), { wrapper });
+  it('refreshes auth state via the provided callback', async () => {
+    const refreshAuthState = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useVerifyEmail(fakeUser, refreshAuthState), { wrapper });
 
     await act(async () => {
       await result.current.refresh.mutateAsync();
     });
 
-    expect(mockRefresh).toHaveBeenCalledWith(fakeUser);
-    await waitFor(() => expect(result.current.refresh.data).toEqual(fakeAuthUser));
+    expect(refreshAuthState).toHaveBeenCalled();
+    await waitFor(() => expect(result.current.refresh.isSuccess).toBe(true));
   });
 
   it('signs out', async () => {
     mockLogOut.mockResolvedValue(undefined);
-    const { result } = renderHook(() => useVerifyEmail(fakeUser), { wrapper });
+    const refreshAuthState = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useVerifyEmail(fakeUser, refreshAuthState), { wrapper });
 
     await act(async () => {
       await result.current.signOut.mutateAsync();
@@ -58,11 +55,15 @@ describe('useVerifyEmail', () => {
     await waitFor(() => expect(result.current.signOut.isSuccess).toBe(true));
   });
 
-  it('rejects resend when there is no signed-in user', async () => {
-    const { result } = renderHook(() => useVerifyEmail(null), { wrapper });
+  it('rejects resend and refresh when there is no signed-in user', async () => {
+    const refreshAuthState = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useVerifyEmail(null, refreshAuthState), { wrapper });
 
     await act(async () => {
       await expect(result.current.resend.mutateAsync()).rejects.toThrow('No signed-in user.');
+    });
+    await act(async () => {
+      await expect(result.current.refresh.mutateAsync()).rejects.toThrow('No signed-in user.');
     });
   });
 });

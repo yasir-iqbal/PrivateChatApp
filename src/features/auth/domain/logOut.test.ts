@@ -11,6 +11,7 @@ describe('logOut', () => {
       signOut: jest.fn().mockResolvedValue(undefined),
       sendEmailVerification: jest.fn(),
       updateDisplayName: jest.fn(),
+      updatePhotoURL: jest.fn(),
       reloadUser: jest.fn(),
       subscribeToAuthState: jest.fn(),
     };
@@ -34,6 +35,7 @@ describe('logOut', () => {
       signOut: jest.fn().mockResolvedValue(undefined),
       sendEmailVerification: jest.fn(),
       updateDisplayName: jest.fn(),
+      updatePhotoURL: jest.fn(),
       reloadUser: jest.fn(),
       subscribeToAuthState: jest.fn(),
     };

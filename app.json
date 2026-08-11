@@ -35,6 +35,14 @@
       "expo-font",
       "expo-asset",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PrivateChat to access your photos to set a profile picture.",
+          "cameraPermission": "Allow PrivateChat to access your camera to take a profile picture.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {

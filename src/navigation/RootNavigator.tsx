@@ -4,12 +4,15 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthState } from '../features/auth/hooks/useAuthState';
 import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
+import { useProfileSetupStatus } from '../features/profile/hooks/useProfileSetupStatus';
+import { ProfileSetupScreen } from '../features/profile/screens/ProfileSetupScreen';
 import { useTheme } from '../shared/theme';
 import { AuthNavigator } from './AuthNavigator';
 
 type RootStackParamList = {
   Auth: undefined;
   VerifyEmail: undefined;
+  ProfileSetup: undefined;
   SignedIn: undefined;
 };
 
@@ -28,9 +31,14 @@ function SignedInPlaceholderScreen() {
 
 export function RootNavigator() {
   const theme = useTheme();
-  const { firebaseUser, authUser, initializing } = useAuthState();
+  const { firebaseUser, authUser, initializing, refresh } = useAuthState();
 
-  if (initializing) {
+  const needsProfileStatus = !!authUser?.emailVerified && !authUser?.photoURL;
+  const { hasSkipped, loading: profileStatusLoading } = useProfileSetupStatus(
+    needsProfileStatus ? authUser?.uid : undefined,
+  );
+
+  if (initializing || (needsProfileStatus && profileStatusLoading)) {
     return (
       <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator color={theme.colors.primary} />
@@ -63,7 +71,13 @@ export function RootNavigator() {
           <Stack.Screen name="Auth" component={AuthNavigator} />
         ) : !authUser.emailVerified ? (
           <Stack.Screen name="VerifyEmail">
-            {() => <VerifyEmailScreen firebaseUser={firebaseUser!} authUser={authUser} />}
+            {() => <VerifyEmailScreen firebaseUser={firebaseUser!} authUser={authUser} refreshAuthState={refresh} />}
+          </Stack.Screen>
+        ) : needsProfileStatus && !hasSkipped ? (
+          <Stack.Screen name="ProfileSetup">
+            {() => (
+              <ProfileSetupScreen firebaseUser={firebaseUser!} refreshAuthState={refresh} />
+            )}
           </Stack.Screen>
         ) : (
           <Stack.Screen name="SignedIn" component={SignedInPlaceholderScreen} />
