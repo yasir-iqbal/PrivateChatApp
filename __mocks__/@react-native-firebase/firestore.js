@@ -10,6 +10,8 @@ module.exports = {
   setDoc: jest.fn(),
   deleteDoc: jest.fn(),
   writeBatch: jest.fn(() => ({ set: jest.fn(), delete: jest.fn(), commit: jest.fn() })),
+  onSnapshot: jest.fn(),
+  addDoc: jest.fn(),
   query: jest.fn(),
   where: jest.fn(),
   limit: jest.fn(),

@@ -50,5 +50,49 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow write: if ownsEmail(email) && request.resource.data.uid == request.auth.uid;
     }
+
+    // 1:1 conversations. The document ID is the two uids sorted and joined,
+    // so both sides derive the same ID and cannot create duplicates.
+    match /conversations/{conversationId} {
+      function isParticipant() {
+        return isSignedIn() && request.auth.uid in resource.data.participants;
+      }
+
+      // Checked against the incoming document, for the create that has no
+      // resource.data to read yet.
+      function joiningAsParticipant() {
+        return isSignedIn()
+               && request.auth.uid in request.resource.data.participants
+               && request.resource.data.participants.size() == 2
+               // Binds the participants to the ID, so nobody can write a
+               // conversation claiming members who never agreed to it.
+               && conversationId == request.resource.data.participants.join('_');
+      }
+
+      allow get: if isParticipant();
+      allow create: if joiningAsParticipant();
+      allow update: if isParticipant() && joiningAsParticipant();
+
+      match /messages/{messageId} {
+        // Membership is read off the conversation ID rather than fetched from
+        // the parent document. Two reasons: a batched write is evaluated
+        // against pre-batch state, so on the first message the parent does not
+        // exist yet and a get() would reject it; and a get() in rules bills as
+        // a document read on every single message.
+        //
+        // This is only sound because the ID encodes the participants and the
+        // parent rule above binds the two together. Group chats will have
+        // generated IDs and will have to fetch the parent instead.
+        function inConversation() {
+          return isSignedIn() && request.auth.uid in conversationId.split('_');
+        }
+
+        allow read: if inConversation();
+        // Senders can only write as themselves, and messages are immutable —
+        // no edit or delete, so neither side can rewrite what was said.
+        allow create: if inConversation() && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
   }
 }

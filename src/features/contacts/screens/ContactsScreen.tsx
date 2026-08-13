@@ -35,15 +35,21 @@ export function ContactsScreen({ navigation, authUser }: Props) {
     const name = contactDisplayName(item);
     return (
       <View style={[styles.row, { borderBottomColor: theme.colors.divider }]}>
-        <ContactAvatar name={name} photoURL={item.photoURL} />
-        <View style={styles.rowText}>
-          <Text style={[theme.typography.body, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-            {name}
-          </Text>
-          <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-            {item.email}
-          </Text>
-        </View>
+        <Pressable
+          style={styles.rowMain}
+          onPress={() => navigation.navigate('Chat', { contactUid: item.uid, contactName: name })}
+          accessibilityLabel={`Chat with ${name}`}
+        >
+          <ContactAvatar name={name} photoURL={item.photoURL} />
+          <View style={styles.rowText}>
+            <Text style={[theme.typography.body, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+              {item.email}
+            </Text>
+          </View>
+        </Pressable>
         <Pressable
           onPress={() => confirmRemove(item)}
           hitSlop={8}
@@ -134,6 +140,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   rowText: {
     flex: 1,
