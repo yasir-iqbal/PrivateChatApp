@@ -14,30 +14,41 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    // Public profile records, used to look someone up by email when adding a
-    // contact.
+    function ownsEmail(email) {
+      return isSignedIn()
+             && request.auth.token.email != null
+             && email == request.auth.token.email.lower();
+    }
+
+    // Public profile records.
     //
-    // Tradeoff: any signed-in user can read any profile. Contact lookup is a
-    // query over this collection, and Firestore rules cannot express "only if
-    // you already know the email" — a rule can't inspect query filters, only
-    // the documents returned. So a determined signed-in user could enumerate
-    // the collection and harvest every address. Acceptable while this is a
-    // small private app; the fix when it stops being acceptable is to move
-    // lookup behind a callable Cloud Function and close reads entirely.
+    // `get` only — deliberately NOT `read`, which would also grant `list`.
+    // A signed-in user can fetch a profile whose uid they already hold (their
+    // own, or one of their contacts), but cannot query the collection to
+    // harvest every registered address.
     match /users/{uid} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       allow write: if isOwner(uid)
                    && request.resource.data.uid == uid
                    // Stops a user publishing an address they don't own, which
                    // would let them intercept contact requests meant for it.
-                   && request.auth.token.email != null
-                   && request.resource.data.email == request.auth.token.email.lower();
+                   && ownsEmail(request.resource.data.email);
 
       // A user's own contact list. Private to them — nobody else can see who
       // someone has added, and nobody can add themselves to your list.
       match /contacts/{contactUid} {
         allow read, write: if isOwner(uid);
       }
+    }
+
+    // Email -> uid, keyed by the address so lookup is a get, not a query.
+    // Same `get`-without-`list` trick: you can resolve an address you already
+    // know, which is what adding a contact needs, but you cannot list the
+    // collection — and since the address IS the document ID, granting `list`
+    // here would hand over every email in one request.
+    match /emailIndex/{email} {
+      allow get: if isSignedIn();
+      allow write: if ownsEmail(email) && request.resource.data.uid == request.auth.uid;
     }
   }
 }
