@@ -16,6 +16,9 @@ jest.mock('../../auth/domain/refreshAuthUser');
 jest.mock('../domain/getHasSkippedProfileSetup');
 jest.mock('../domain/pickAndUploadAvatar');
 jest.mock('../domain/skipProfileSetup');
+// Fires from the navigator on every auth change; irrelevant to this flow.
+// Needs an explicit resolved promise — the caller chains .catch() on it.
+jest.mock('../domain/syncUserProfile', () => ({ syncUserProfile: jest.fn().mockResolvedValue(undefined) }));
 
 const mockObserveAuthState = observeAuthState as jest.MockedFunction<typeof observeAuthState>;
 const mockRefreshAuthUser = refreshAuthUser as jest.MockedFunction<typeof refreshAuthUser>;

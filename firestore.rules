@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Deploy with:  firebase deploy --only firestore:rules
+// These are the source of truth for access control. The client is untrusted;
+// anything not allowed here must not be relied on by app code.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Public profile records, used to look someone up by email when adding a
+    // contact.
+    //
+    // Tradeoff: any signed-in user can read any profile. Contact lookup is a
+    // query over this collection, and Firestore rules cannot express "only if
+    // you already know the email" — a rule can't inspect query filters, only
+    // the documents returned. So a determined signed-in user could enumerate
+    // the collection and harvest every address. Acceptable while this is a
+    // small private app; the fix when it stops being acceptable is to move
+    // lookup behind a callable Cloud Function and close reads entirely.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid)
+                   && request.resource.data.uid == uid
+                   // Stops a user publishing an address they don't own, which
+                   // would let them intercept contact requests meant for it.
+                   && request.auth.token.email != null
+                   && request.resource.data.email == request.auth.token.email.lower();
+
+      // A user's own contact list. Private to them — nobody else can see who
+      // someone has added, and nobody can add themselves to your list.
+      match /contacts/{contactUid} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+  }
+}

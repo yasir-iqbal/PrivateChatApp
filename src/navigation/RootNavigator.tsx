@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAuthState } from '../features/auth/hooks/useAuthState';
 import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
 import { useProfileSetupStatus } from '../features/profile/hooks/useProfileSetupStatus';
+import { useSyncUserProfile } from '../features/profile/hooks/useSyncUserProfile';
 import { ProfileSetupScreen } from '../features/profile/screens/ProfileSetupScreen';
 import { useTheme } from '../shared/theme';
 import { AuthNavigator } from './AuthNavigator';
@@ -32,6 +33,9 @@ function SignedInPlaceholderScreen() {
 export function RootNavigator() {
   const theme = useTheme();
   const { firebaseUser, authUser, initializing, refresh } = useAuthState();
+
+  // Publishes the user into the users collection so contacts can find them.
+  useSyncUserProfile(authUser);
 
   const needsProfileStatus = !!authUser?.emailVerified && !authUser?.photoURL;
   const { hasSkipped, loading: profileStatusLoading, markSkipped } = useProfileSetupStatus(
