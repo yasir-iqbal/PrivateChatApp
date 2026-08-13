@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useAuthState } from '../features/auth/hooks/useAuthState';
 import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
@@ -9,26 +9,16 @@ import { useSyncUserProfile } from '../features/profile/hooks/useSyncUserProfile
 import { ProfileSetupScreen } from '../features/profile/screens/ProfileSetupScreen';
 import { useTheme } from '../shared/theme';
 import { AuthNavigator } from './AuthNavigator';
+import { MainNavigator } from './MainNavigator';
 
 type RootStackParamList = {
   Auth: undefined;
   VerifyEmail: undefined;
   ProfileSetup: undefined;
-  SignedIn: undefined;
+  Main: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-// Temporary landing screen for authenticated + verified users. Replace with
-// the Dashboard feature once it's built.
-function SignedInPlaceholderScreen() {
-  const theme = useTheme();
-  return (
-    <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-      <Text style={{ color: theme.colors.textPrimary }}>Signed in — Dashboard coming soon</Text>
-    </View>
-  );
-}
 
 export function RootNavigator() {
   const theme = useTheme();
@@ -88,7 +78,7 @@ export function RootNavigator() {
             )}
           </Stack.Screen>
         ) : (
-          <Stack.Screen name="SignedIn" component={SignedInPlaceholderScreen} />
+          <Stack.Screen name="Main">{() => <MainNavigator authUser={authUser} />}</Stack.Screen>
         )}
       </Stack.Navigator>
     </NavigationContainer>

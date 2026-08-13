@@ -19,6 +19,8 @@ jest.mock('../domain/skipProfileSetup');
 // Fires from the navigator on every auth change; irrelevant to this flow.
 // Needs an explicit resolved promise — the caller chains .catch() on it.
 jest.mock('../domain/syncUserProfile', () => ({ syncUserProfile: jest.fn().mockResolvedValue(undefined) }));
+// Rendered once setup is done — stubbed so this test doesn't depend on it.
+jest.mock('../../contacts/domain/listContacts', () => ({ listContacts: jest.fn().mockResolvedValue([]) }));
 
 const mockObserveAuthState = observeAuthState as jest.MockedFunction<typeof observeAuthState>;
 const mockRefreshAuthUser = refreshAuthUser as jest.MockedFunction<typeof refreshAuthUser>;
@@ -35,7 +37,8 @@ const verifiedUser = {
   emailVerified: true,
 } as User;
 
-const SIGNED_IN_TEXT = 'Signed in — Dashboard coming soon';
+// Where the user lands once setup is complete.
+const POST_SETUP_TEXT = 'Contacts';
 
 describe('profile setup flow', () => {
   const QueryWrapper = createQueryClientWrapper();
@@ -73,7 +76,7 @@ describe('profile setup flow', () => {
     fireEvent.press(screen.getByText('Skip for now'));
 
     expect(mockSkipProfileSetup).toHaveBeenCalledWith('uid-1');
-    await waitFor(() => expect(screen.getByText(SIGNED_IN_TEXT)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(POST_SETUP_TEXT)).toBeTruthy());
   });
 
   it('leaves the profile setup screen once an avatar upload completes', async () => {
@@ -93,7 +96,7 @@ describe('profile setup flow', () => {
 
     fireEvent.press(screen.getByText('Choose photo'));
 
-    await waitFor(() => expect(screen.getByText(SIGNED_IN_TEXT)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(POST_SETUP_TEXT)).toBeTruthy());
   });
 
   it('stays on the profile setup screen when the picker is cancelled', async () => {
