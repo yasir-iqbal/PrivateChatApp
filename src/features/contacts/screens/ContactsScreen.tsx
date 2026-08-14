@@ -5,7 +5,6 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View }
 import { Button, ScreenContainer } from '../../../shared/components';
 import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
-import { useSignOut } from '../../auth/hooks/useSignOut';
 import { ContactAvatar } from '../components/ContactAvatar';
 import { contactDisplayName, type Contact } from '../domain/contact';
 import { useContacts } from '../hooks/useContacts';
@@ -18,7 +17,6 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Contacts'> & {
 export function ContactsScreen({ navigation, authUser }: Props) {
   const theme = useTheme();
   const { contacts, remove } = useContacts(authUser.uid);
-  const signOut = useSignOut();
 
   function confirmRemove(contact: Contact) {
     Alert.alert(
@@ -70,24 +68,23 @@ export function ContactsScreen({ navigation, authUser }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <Text style={[theme.typography.title, { color: theme.colors.textPrimary }]}>Contacts</Text>
-        <View style={styles.headerActions}>
-          <Pressable
-            onPress={() => navigation.navigate('AddContact')}
-            hitSlop={8}
-            accessibilityLabel="Add contact"
-          >
-            <Ionicons name="person-add-outline" size={22} color={theme.colors.primary} />
+        <View style={styles.headerLeft}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
           </Pressable>
-          <Pressable
-            onPress={() => signOut.mutate()}
-            hitSlop={8}
-            accessibilityLabel="Sign out"
-            style={{ marginLeft: theme.spacing.md }}
+          <Text
+            style={[theme.typography.title, { color: theme.colors.textPrimary, marginLeft: theme.spacing.md }]}
           >
-            <Ionicons name="log-out-outline" size={22} color={theme.colors.textSecondary} />
-          </Pressable>
+            Contacts
+          </Text>
         </View>
+        <Pressable
+          onPress={() => navigation.navigate('AddContact')}
+          hitSlop={8}
+          accessibilityLabel="Add contact"
+        >
+          <Ionicons name="person-add-outline" size={22} color={theme.colors.primary} />
+        </Pressable>
       </View>
 
       {contacts.isPending ? (
@@ -126,15 +123,6 @@ export function ContactsScreen({ navigation, authUser }: Props) {
           />
         </View>
       )}
-
-      {/* Floating action button for starting a new chat, WhatsApp-style. */}
-      <Pressable
-        onPress={() => navigation.navigate('NewChat')}
-        accessibilityLabel="New chat"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-      >
-        <Ionicons name="chatbubble" size={24} color={theme.colors.onPrimary} />
-      </Pressable>
     </ScreenContainer>
   );
 }
@@ -146,7 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  headerActions: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -169,20 +157,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    left: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
   },
 });

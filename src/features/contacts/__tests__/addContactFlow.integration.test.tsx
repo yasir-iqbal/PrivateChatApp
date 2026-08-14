@@ -12,6 +12,8 @@ import type { Contact } from '../domain/contact';
 
 jest.mock('../domain/addContactByEmail');
 jest.mock('../domain/listContacts');
+// The navigator now opens on Chats; this flow is only about contacts.
+jest.mock('../../chat/domain/observeConversations', () => ({ observeConversations: jest.fn(() => jest.fn()) }));
 
 const mockAddContactByEmail = addContactByEmail as jest.MockedFunction<typeof addContactByEmail>;
 const mockListContacts = listContacts as jest.MockedFunction<typeof listContacts>;
@@ -58,6 +60,7 @@ describe('add contact flow', () => {
     });
 
     renderFlow();
+    fireEvent.press(screen.getByLabelText('Contacts'));
     await waitFor(() => expect(screen.getByText(/No contacts yet/)).toBeTruthy());
 
     fireEvent.press(screen.getByLabelText('Add contact'));
@@ -77,6 +80,7 @@ describe('add contact flow', () => {
     mockAddContactByEmail.mockResolvedValue({ status: 'not-found', email: 'ghost@b.com' });
 
     renderFlow();
+    fireEvent.press(screen.getByLabelText('Contacts'));
     await waitFor(() => expect(screen.getByText(/No contacts yet/)).toBeTruthy());
 
     fireEvent.press(screen.getByLabelText('Add contact'));

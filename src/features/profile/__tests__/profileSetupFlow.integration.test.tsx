@@ -20,7 +20,7 @@ jest.mock('../domain/skipProfileSetup');
 // Needs an explicit resolved promise — the caller chains .catch() on it.
 jest.mock('../domain/syncUserProfile', () => ({ syncUserProfile: jest.fn().mockResolvedValue(undefined) }));
 // Rendered once setup is done — stubbed so this test doesn't depend on it.
-jest.mock('../../contacts/domain/listContacts', () => ({ listContacts: jest.fn().mockResolvedValue([]) }));
+jest.mock('../../chat/domain/observeConversations', () => ({ observeConversations: jest.fn(() => jest.fn()) }));
 
 const mockObserveAuthState = observeAuthState as jest.MockedFunction<typeof observeAuthState>;
 const mockRefreshAuthUser = refreshAuthUser as jest.MockedFunction<typeof refreshAuthUser>;
@@ -38,7 +38,7 @@ const verifiedUser = {
 } as User;
 
 // Where the user lands once setup is complete.
-const POST_SETUP_TEXT = 'Contacts';
+const POST_SETUP_TEXT = 'Chats';
 
 describe('profile setup flow', () => {
   const QueryWrapper = createQueryClientWrapper();

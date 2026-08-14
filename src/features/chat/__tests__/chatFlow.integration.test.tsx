@@ -14,6 +14,8 @@ import { sendMessage } from '../domain/sendMessage';
 
 jest.mock('../../contacts/domain/listContacts');
 jest.mock('../domain/sendMessage');
+// The chat list is the navigator root now; this flow starts from its FAB.
+jest.mock('../domain/observeConversations', () => ({ observeConversations: jest.fn(() => jest.fn()) }));
 jest.mock('../domain/observeMessages', () => ({
   observeMessages: jest.fn(),
   toChronological: jest.requireActual('../domain/observeMessages').toChronological,
@@ -66,6 +68,7 @@ describe('chat flow', () => {
     mockSendMessage.mockResolvedValue(undefined);
 
     renderFlow();
+    fireEvent.press(screen.getByLabelText('New chat'));
     await waitFor(() => expect(screen.getByText('Bob')).toBeTruthy());
 
     fireEvent.press(screen.getByLabelText('Chat with Bob'));
@@ -95,6 +98,7 @@ describe('chat flow', () => {
     });
 
     renderFlow();
+    fireEvent.press(screen.getByLabelText('New chat'));
     await waitFor(() => expect(screen.getByText('Bob')).toBeTruthy());
     fireEvent.press(screen.getByLabelText('Chat with Bob'));
     await waitFor(() => expect(screen.getByText('No messages yet. Say hello.')).toBeTruthy());

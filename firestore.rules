@@ -69,7 +69,12 @@ service cloud.firestore {
                && conversationId == request.resource.data.participants.join('_');
       }
 
-      allow get: if isParticipant();
+      // `list` is what backs the chat list. Safe to grant because the rule is
+      // evaluated against every document the query returns, so a query that
+      // could surface someone else's conversation fails outright rather than
+      // filtering — the client must ask for its own, which it does via
+      // array-contains on its own uid.
+      allow get, list: if isParticipant();
       allow create: if joiningAsParticipant();
       allow update: if isParticipant() && joiningAsParticipant();
 

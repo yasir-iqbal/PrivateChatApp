@@ -33,6 +33,18 @@ export type ChatRepository = {
     onChange: (meta: ConversationMeta) => void,
   ) => () => void;
   markDelivered: (conversationId: string, participants: string[], uid: string) => Promise<void>;
+  observeConversations: (
+    uid: string,
+    onChange: (conversations: ConversationRecord[]) => void,
+    onError: (error: Error) => void,
+  ) => () => void;
+};
+
+export type ConversationRecord = {
+  id: string;
+  participants: string[];
+  lastMessageText: string | null;
+  lastMessageAt: number | null;
 };
 
 function toMillis(value: unknown): number | null {
@@ -138,6 +150,33 @@ export const firestoreChatRepository: ChatRepository = {
       // merge without it would leave request.resource.data missing the field.
       { participants, deliveredAt: { [uid]: firestore.serverTimestamp() } },
       { merge: true },
+    );
+  },
+
+  observeConversations(uid, onChange, onError) {
+    const db = firestore.getFirestore();
+    return firestore.onSnapshot(
+      firestore.query(
+        firestore.collection(db, CONVERSATIONS_COLLECTION),
+        firestore.where('participants', 'array-contains', uid),
+        // Deliberately no orderBy. Combining it with array-contains would
+        // require a composite index; ordering happens in the domain instead,
+        // which is fine at the scale one person's conversation list reaches.
+      ),
+      (snapshot) => {
+        onChange(
+          snapshot.docs.map((document) => {
+            const data = document.data() ?? {};
+            return {
+              id: document.id,
+              participants: Array.isArray(data.participants) ? (data.participants as string[]) : [],
+              lastMessageText: typeof data.lastMessageText === 'string' ? data.lastMessageText : null,
+              lastMessageAt: toMillis(data.lastMessageAt),
+            };
+          }),
+        );
+      },
+      onError,
     );
   },
 };
