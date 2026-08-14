@@ -1,17 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ChatScreen } from './ChatScreen';
 import { ThemeProvider } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import type { Message } from '../domain/message';
+import { useConversationMeta } from '../hooks/useConversationMeta';
 import { useMessages } from '../hooks/useMessages';
 import { useSendMessage } from '../hooks/useSendMessage';
 
 jest.mock('../hooks/useMessages');
 jest.mock('../hooks/useSendMessage');
+jest.mock('../hooks/useConversationMeta');
 
 const mockUseMessages = useMessages as jest.MockedFunction<typeof useMessages>;
 const mockUseSendMessage = useSendMessage as jest.MockedFunction<typeof useSendMessage>;
+const mockUseConversationMeta = useConversationMeta as jest.MockedFunction<typeof useConversationMeta>;
 
 const authUser: AuthUser = {
   uid: 'uid-me',
@@ -46,15 +50,22 @@ function sendStub(overrides: Record<string, unknown> = {}) {
 
 function renderScreen(navigation = { goBack: jest.fn(), navigate: jest.fn() }) {
   render(
-    <ThemeProvider>
-      <ChatScreen
-        {...({
-          navigation,
-          route: { params: { contactUid: 'uid-bob', contactName: 'Bob' } },
-        } as any)}
-        authUser={authUser}
-      />
-    </ThemeProvider>,
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 0, left: 0, right: 0, bottom: 0 },
+      }}
+    >
+      <ThemeProvider>
+        <ChatScreen
+          {...({
+            navigation,
+            route: { params: { contactUid: 'uid-bob', contactName: 'Bob' } },
+          } as any)}
+          authUser={authUser}
+        />
+      </ThemeProvider>
+    </SafeAreaProvider>,
   );
   return { navigation };
 }
@@ -62,6 +73,7 @@ function renderScreen(navigation = { goBack: jest.fn(), navigate: jest.fn() }) {
 describe('ChatScreen', () => {
   beforeEach(() => {
     mockUseSendMessage.mockReturnValue(sendStub());
+    mockUseConversationMeta.mockReturnValue({ otherDeliveredAt: null, otherReadAt: null });
   });
 
   it('shows the contact name in the header', () => {

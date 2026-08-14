@@ -37,7 +37,13 @@ export function ContactsScreen({ navigation, authUser }: Props) {
       <View style={[styles.row, { borderBottomColor: theme.colors.divider }]}>
         <Pressable
           style={styles.rowMain}
-          onPress={() => navigation.navigate('Chat', { contactUid: item.uid, contactName: name })}
+          onPress={() =>
+            navigation.navigate('Chat', {
+              contactUid: item.uid,
+              contactName: name,
+              contactPhotoURL: item.photoURL,
+            })
+          }
           accessibilityLabel={`Chat with ${name}`}
         >
           <ContactAvatar name={name} photoURL={item.photoURL} />
@@ -120,6 +126,15 @@ export function ContactsScreen({ navigation, authUser }: Props) {
           />
         </View>
       )}
+
+      {/* Floating action button for starting a new chat, WhatsApp-style. */}
+      <Pressable
+        onPress={() => navigation.navigate('NewChat')}
+        accessibilityLabel="New chat"
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+      >
+        <Ionicons name="chatbubble" size={24} color={theme.colors.onPrimary} />
+      </Pressable>
     </ScreenContainer>
   );
 }
@@ -154,5 +169,20 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    left: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
 });

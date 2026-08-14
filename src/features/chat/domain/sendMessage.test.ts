@@ -6,6 +6,8 @@ function fakeRepo(): jest.Mocked<ChatRepository> {
   return {
     sendMessage: jest.fn().mockResolvedValue(undefined),
     observeMessages: jest.fn(),
+    observeConversationMeta: jest.fn(),
+    markDelivered: jest.fn(),
   };
 }
 

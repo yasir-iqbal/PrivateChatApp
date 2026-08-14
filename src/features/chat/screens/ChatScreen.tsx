@@ -11,12 +11,16 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ScreenContainer } from '../../../shared/components';
 import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
+import { ContactAvatar } from '../../contacts/components/ContactAvatar';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
+import { MessageBubble } from '../components/MessageBubble';
 import type { Message } from '../domain/message';
+import { messageStatusFor } from '../domain/messageStatus';
+import { useConversationMeta } from '../hooks/useConversationMeta';
 import { useMessages } from '../hooks/useMessages';
 import { useSendMessage } from '../hooks/useSendMessage';
 
@@ -26,43 +30,39 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Chat'> & {
 
 export function ChatScreen({ navigation, route, authUser }: Props) {
   const theme = useTheme();
-  const { contactUid, contactName } = route.params;
+  const insets = useSafeAreaInsets();
+  const { contactUid, contactName, contactPhotoURL } = route.params;
   const { messages, loading, error } = useMessages(authUser.uid, contactUid);
+  const { otherDeliveredAt, otherReadAt } = useConversationMeta(authUser.uid, contactUid, messages);
   const { draft, setDraft, send, canSend, error: sendError } = useSendMessage(authUser.uid, contactUid);
 
   function renderMessage({ item }: { item: Message }) {
     const isMine = item.senderId === authUser.uid;
     return (
-      <View
-        style={[
-          styles.bubble,
-          isMine ? styles.bubbleMine : styles.bubbleTheirs,
-          {
-            backgroundColor: isMine ? theme.colors.bubbleOutgoing : theme.colors.bubbleIncoming,
-            opacity: item.pending ? 0.6 : 1,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            theme.typography.body,
-            { color: isMine ? theme.colors.bubbleOutgoingText : theme.colors.bubbleIncomingText },
-          ]}
-        >
-          {item.text}
-        </Text>
-      </View>
+      <MessageBubble
+        message={item}
+        isMine={isMine}
+        status={messageStatusFor(item, otherDeliveredAt, otherReadAt)}
+      />
     );
   }
 
   return (
-    <ScreenContainer>
-      <View style={styles.header}>
+    <View style={[styles.flex, { backgroundColor: theme.colors.chatBackground }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.colors.surface, paddingTop: insets.top + 8, borderBottomColor: theme.colors.divider },
+        ]}
+      >
         <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
         </Pressable>
+        <View style={styles.headerAvatar}>
+          <ContactAvatar name={contactName} photoURL={contactPhotoURL ?? null} size={38} />
+        </View>
         <Text
-          style={[theme.typography.title, { color: theme.colors.textPrimary, marginLeft: theme.spacing.md }]}
+          style={[theme.typography.body, styles.headerName, { color: theme.colors.textPrimary }]}
           numberOfLines={1}
         >
           {contactName}
@@ -101,12 +101,12 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
         )}
 
         {sendError ? (
-          <Text style={[theme.typography.caption, { color: theme.colors.error, marginBottom: theme.spacing.xs }]}>
+          <Text style={[theme.typography.caption, styles.sendError, { color: theme.colors.error }]}>
             {sendError.message}
           </Text>
         ) : null}
 
-        <View style={[styles.composer, { borderTopColor: theme.colors.divider }]}>
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -116,11 +116,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             style={[
               theme.typography.body,
               styles.input,
-              {
-                color: theme.colors.textPrimary,
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-              },
+              { color: theme.colors.textPrimary, backgroundColor: theme.colors.surface },
             ]}
             testID="chat-input"
           />
@@ -129,13 +125,13 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             disabled={!canSend}
             hitSlop={8}
             accessibilityLabel="Send message"
-            style={[styles.sendButton, { backgroundColor: theme.colors.primary, opacity: canSend ? 1 : 0.4 }]}
+            style={[styles.sendButton, { backgroundColor: theme.colors.primary, opacity: canSend ? 1 : 0.5 }]}
           >
-            <Ionicons name="send" size={18} color={theme.colors.onPrimary} />
+            <Ionicons name="send" size={20} color={theme.colors.onPrimary} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </ScreenContainer>
+    </View>
   );
 }
 
@@ -144,7 +140,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerAvatar: {
+    marginLeft: 12,
+  },
+  headerName: {
+    flex: 1,
+    marginLeft: 10,
+    fontWeight: '600',
   },
   list: {
     paddingVertical: 8,
@@ -153,41 +159,30 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
   },
-  bubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginVertical: 3,
-  },
-  bubbleMine: {
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 4,
-  },
-  bubbleTheirs: {
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
+  sendError: {
+    marginHorizontal: 12,
+    marginBottom: 4,
   },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    paddingHorizontal: 8,
     paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   input: {
     flex: 1,
     maxHeight: 120,
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    borderRadius: 22,
+    paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,

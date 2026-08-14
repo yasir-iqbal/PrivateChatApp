@@ -14,10 +14,16 @@ export type ThemeColors = {
   border: string;
   divider: string;
   icon: string;
+  chatBackground: string;
   bubbleOutgoing: string;
   bubbleOutgoingText: string;
   bubbleIncoming: string;
   bubbleIncomingText: string;
+  // Timestamp + tick row inside a bubble, dimmer than the message text.
+  bubbleMeta: string;
+  // Delivery ticks: grey until read, then the familiar blue.
+  tick: string;
+  tickRead: string;
   success: string;
   error: string;
   statusBarStyle: 'light' | 'dark';
@@ -40,10 +46,14 @@ export const lightColors: ThemeColors = {
   divider: '#E9EDEF',
   icon: '#54656F',
 
-  bubbleOutgoing: '#FFF3D6',
-  bubbleOutgoingText: '#1A1A1A',
+  chatBackground: '#EFE7DE',
+  bubbleOutgoing: '#D9FDD3',
+  bubbleOutgoingText: '#111B21',
   bubbleIncoming: '#FFFFFF',
   bubbleIncomingText: '#111B21',
+  bubbleMeta: '#667781',
+  tick: '#8696A0',
+  tickRead: '#53BDEB',
 
   success: '#25D366',
   error: '#D32F2F',
@@ -68,10 +78,14 @@ export const darkColors: ThemeColors = {
   divider: '#2A3942',
   icon: '#AEBAC1',
 
-  bubbleOutgoing: '#4A3B14',
-  bubbleOutgoingText: '#F5E9C8',
+  chatBackground: '#0B141A',
+  bubbleOutgoing: '#005C4B',
+  bubbleOutgoingText: '#E9EDEF',
   bubbleIncoming: '#202C33',
   bubbleIncomingText: '#E9EDEF',
+  bubbleMeta: '#8696A0',
+  tick: '#8696A0',
+  tickRead: '#53BDEB',
 
   success: '#25D366',
   error: '#F2726F',
