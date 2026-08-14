@@ -33,7 +33,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   const insets = useSafeAreaInsets();
   const { contactUid, contactName, contactPhotoURL } = route.params;
   const { messages, loading, error } = useMessages(authUser.uid, contactUid);
-  const { otherDeliveredAt, otherReadAt } = useConversationMeta(authUser.uid, contactUid, messages);
+  const { otherDeliveredAt, otherSeenAt } = useConversationMeta(authUser.uid, contactUid, messages);
   const { draft, setDraft, send, canSend, error: sendError } = useSendMessage(authUser.uid, contactUid);
 
   function renderMessage({ item }: { item: Message }) {
@@ -42,7 +42,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
       <MessageBubble
         message={item}
         isMine={isMine}
-        status={messageStatusFor(item, otherDeliveredAt, otherReadAt)}
+        status={messageStatusFor(item, otherDeliveredAt, otherSeenAt)}
       />
     );
   }

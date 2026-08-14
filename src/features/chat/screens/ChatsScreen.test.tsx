@@ -8,6 +8,9 @@ import { useConversations, type ConversationRow } from '../hooks/useConversation
 
 jest.mock('../hooks/useConversations');
 jest.mock('../../auth/hooks/useSignOut');
+// Fires from this screen on every incoming conversation; not what these
+// tests are about, and it would otherwise reach Firestore.
+jest.mock('../hooks/useDeliveryReporter');
 
 const mockUseConversations = useConversations as jest.MockedFunction<typeof useConversations>;
 const mockUseSignOut = useSignOut as jest.MockedFunction<typeof useSignOut>;
@@ -25,6 +28,7 @@ const withBob: ConversationRow = {
   otherUid: 'uid-bob',
   lastMessageText: 'see you then',
   lastMessageAt: Date.now(),
+  lastMessageSenderId: 'uid-bob',
   profile: { uid: 'uid-bob', email: 'bob@b.com', displayName: 'Bob', photoURL: null },
 };
 

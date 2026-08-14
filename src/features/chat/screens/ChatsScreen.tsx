@@ -9,6 +9,7 @@ import { useSignOut } from '../../auth/hooks/useSignOut';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
 import { useConversations, type ConversationRow } from '../hooks/useConversations';
+import { useDeliveryReporter } from '../hooks/useDeliveryReporter';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Chats'> & {
   authUser: AuthUser;
@@ -35,6 +36,9 @@ function rowName(row: ConversationRow): string {
 export function ChatsScreen({ navigation, authUser }: Props) {
   const theme = useTheme();
   const { conversations, loading, error } = useConversations(authUser.uid);
+  // The list is open whenever the app is, which is what lets delivery be
+  // reported before the recipient opens the conversation.
+  useDeliveryReporter(authUser.uid, conversations);
   const signOut = useSignOut();
 
   function renderRow({ item }: { item: ConversationRow }) {

@@ -73,7 +73,7 @@ function renderScreen(navigation = { goBack: jest.fn(), navigate: jest.fn() }) {
 describe('ChatScreen', () => {
   beforeEach(() => {
     mockUseSendMessage.mockReturnValue(sendStub());
-    mockUseConversationMeta.mockReturnValue({ otherDeliveredAt: null, otherReadAt: null });
+    mockUseConversationMeta.mockReturnValue({ otherDeliveredAt: null, otherSeenAt: null });
   });
 
   it('shows the contact name in the header', () => {

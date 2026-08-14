@@ -6,33 +6,42 @@ import type { MessageStatus } from '../domain/messageStatus';
 
 const SIZE = 15;
 
-// One tick for sent, two for delivered, two blue for read, a clock while the
-// write is still local. Only ever shown on your own messages.
+const LABELS: Record<MessageStatus, string> = {
+  sending: 'Sending',
+  sent: 'Sent',
+  delivered: 'Delivered',
+  seen: 'Seen',
+};
+
+// A clock while the write is local, one tick once it reaches the server, two
+// once the recipient's app has it, two blue once they have opened the chat.
+// Only ever shown on your own messages.
 export function MessageTicks({ status }: { status: MessageStatus }) {
   const theme = useTheme();
 
-  if (status === 'pending') {
+  if (status === 'sending') {
     return (
       <Ionicons
         name="time-outline"
         size={SIZE - 2}
         color={theme.colors.bubbleMeta}
-        accessibilityLabel="Sending"
+        accessibilityLabel={LABELS.sending}
       />
     );
   }
 
-  const color = status === 'read' ? theme.colors.tickRead : theme.colors.tick;
-  const label = status === 'read' ? 'Read' : status === 'delivered' ? 'Delivered' : 'Sent';
+  const color = status === 'seen' ? theme.colors.tickRead : theme.colors.tick;
 
   if (status === 'sent') {
-    return <Ionicons name="checkmark" size={SIZE} color={color} accessibilityLabel={label} />;
+    return (
+      <Ionicons name="checkmark" size={SIZE} color={color} accessibilityLabel={LABELS.sent} />
+    );
   }
 
-  // Two overlapping checks, offset so they read as WhatsApp's double tick
-  // rather than one mark on top of another.
+  // Two overlapping checks, offset so they read as a double tick rather than
+  // one mark drawn on top of another.
   return (
-    <View style={styles.double} accessibilityLabel={label}>
+    <View style={styles.double} accessibilityLabel={LABELS[status]}>
       <Ionicons name="checkmark" size={SIZE} color={color} style={styles.back} />
       <Ionicons name="checkmark" size={SIZE} color={color} style={styles.front} />
     </View>

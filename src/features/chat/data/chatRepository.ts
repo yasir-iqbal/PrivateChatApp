@@ -13,7 +13,7 @@ export const MESSAGE_PAGE_SIZE = 100;
 // delivered once the other participant's mark is at or past its send time.
 export type ConversationMeta = {
   deliveredAt: Record<string, number>;
-  readAt: Record<string, number>;
+  seenAt: Record<string, number>;
 };
 
 export type ChatRepository = {
@@ -33,6 +33,7 @@ export type ChatRepository = {
     onChange: (meta: ConversationMeta) => void,
   ) => () => void;
   markDelivered: (conversationId: string, participants: string[], uid: string) => Promise<void>;
+  markSeen: (conversationId: string, participants: string[], uid: string) => Promise<void>;
   observeConversations: (
     uid: string,
     onChange: (conversations: ConversationRecord[]) => void,
@@ -45,6 +46,9 @@ export type ConversationRecord = {
   participants: string[];
   lastMessageText: string | null;
   lastMessageAt: number | null;
+  // Lets the chat list tell an incoming conversation from one of our own, so
+  // only the recipient reports delivery.
+  lastMessageSenderId: string | null;
 };
 
 function toMillis(value: unknown): number | null {
@@ -83,6 +87,7 @@ export const firestoreChatRepository: ChatRepository = {
         participants,
         lastMessageText: text,
         lastMessageAt: firestore.serverTimestamp(),
+        lastMessageSenderId: senderId,
         updatedAt: firestore.serverTimestamp(),
       },
       { merge: true },
@@ -134,11 +139,11 @@ export const firestoreChatRepository: ChatRepository = {
         const data = snapshot.data() ?? {};
         onChange({
           deliveredAt: toMillisMap(data.deliveredAt),
-          readAt: toMillisMap(data.readAt),
+          seenAt: toMillisMap(data.seenAt),
         });
       },
       // A conversation that doesn't exist yet is not an error, just empty.
-      () => onChange({ deliveredAt: {}, readAt: {} }),
+      () => onChange({ deliveredAt: {}, seenAt: {} }),
     );
   },
 
@@ -149,6 +154,22 @@ export const firestoreChatRepository: ChatRepository = {
       // participants is re-sent because the rules check it on every write; a
       // merge without it would leave request.resource.data missing the field.
       { participants, deliveredAt: { [uid]: firestore.serverTimestamp() } },
+      { merge: true },
+    );
+  },
+
+  async markSeen(conversationId, participants, uid) {
+    const db = firestore.getFirestore();
+    // Seen implies delivered, so both marks move together — otherwise opening
+    // a chat before the list had reported delivery would show a blue tick
+    // that had never been a double one.
+    await firestore.setDoc(
+      firestore.doc(db, CONVERSATIONS_COLLECTION, conversationId),
+      {
+        participants,
+        deliveredAt: { [uid]: firestore.serverTimestamp() },
+        seenAt: { [uid]: firestore.serverTimestamp() },
+      },
       { merge: true },
     );
   },
@@ -172,6 +193,8 @@ export const firestoreChatRepository: ChatRepository = {
               participants: Array.isArray(data.participants) ? (data.participants as string[]) : [],
               lastMessageText: typeof data.lastMessageText === 'string' ? data.lastMessageText : null,
               lastMessageAt: toMillis(data.lastMessageAt),
+              lastMessageSenderId:
+                typeof data.lastMessageSenderId === 'string' ? data.lastMessageSenderId : null,
             };
           }),
         );

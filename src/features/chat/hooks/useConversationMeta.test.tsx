@@ -1,14 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { useConversationMeta } from './useConversationMeta';
-import { markDelivered, observeConversationMeta } from '../domain/observeConversationMeta';
+import { markSeen, observeConversationMeta } from '../domain/observeConversationMeta';
 import type { ConversationMeta } from '../data/chatRepository';
 import type { Message } from '../domain/message';
 
 jest.mock('../domain/observeConversationMeta');
 
 const mockObserve = observeConversationMeta as jest.MockedFunction<typeof observeConversationMeta>;
-const mockMarkDelivered = markDelivered as jest.MockedFunction<typeof markDelivered>;
+const mockMarkSeen = markSeen as jest.MockedFunction<typeof markSeen>;
 
 function message(senderId: string, clientSentAt: number): Message {
   return { id: `m${clientSentAt}`, senderId, text: 'x', sentAt: clientSentAt, clientSentAt, pending: false };
@@ -16,7 +16,7 @@ function message(senderId: string, clientSentAt: number): Message {
 
 describe('useConversationMeta', () => {
   beforeEach(() => {
-    mockMarkDelivered.mockResolvedValue(undefined);
+    mockMarkSeen.mockResolvedValue(undefined);
     mockObserve.mockReturnValue(jest.fn());
   });
 
@@ -28,24 +28,24 @@ describe('useConversationMeta', () => {
     });
 
     const { result } = renderHook(() => useConversationMeta('uid-me', 'uid-bob', []));
-    act(() => emit?.({ deliveredAt: { 'uid-bob': 500, 'uid-me': 900 }, readAt: { 'uid-bob': 400 } }));
+    act(() => emit?.({ deliveredAt: { 'uid-bob': 500, 'uid-me': 900 }, seenAt: { 'uid-bob': 400 } }));
 
     await waitFor(() => expect(result.current.otherDeliveredAt).toBe(500));
-    expect(result.current.otherReadAt).toBe(400);
+    expect(result.current.otherSeenAt).toBe(400);
   });
 
-  it('reports delivery when an incoming message is on screen', async () => {
+  it('reports seen when an incoming message is on screen', async () => {
     renderHook(() => useConversationMeta('uid-me', 'uid-bob', [message('uid-bob', 1)]));
 
-    await waitFor(() => expect(mockMarkDelivered).toHaveBeenCalledWith('uid-me', 'uid-bob'));
+    await waitFor(() => expect(mockMarkSeen).toHaveBeenCalledWith('uid-me', 'uid-bob'));
   });
 
-  // Otherwise every sender would mark their own messages delivered to
-  // themselves, and the tick would never mean anything.
-  it('does not report delivery for our own messages', () => {
+  // Otherwise every sender would mark their own messages seen by
+  // themselves, and the blue tick would never mean anything.
+  it('does not report seen for our own messages', () => {
     renderHook(() => useConversationMeta('uid-me', 'uid-bob', [message('uid-me', 1)]));
 
-    expect(mockMarkDelivered).not.toHaveBeenCalled();
+    expect(mockMarkSeen).not.toHaveBeenCalled();
   });
 
   it('reports once per arrival rather than on every render', async () => {
@@ -55,17 +55,17 @@ describe('useConversationMeta', () => {
       { initialProps: { messages } },
     );
 
-    await waitFor(() => expect(mockMarkDelivered).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockMarkSeen).toHaveBeenCalledTimes(1));
     rerender({ messages: [...messages] });
-    expect(mockMarkDelivered).toHaveBeenCalledTimes(1);
+    expect(mockMarkSeen).toHaveBeenCalledTimes(1);
 
     rerender({ messages: [...messages, message('uid-bob', 2)] });
-    await waitFor(() => expect(mockMarkDelivered).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockMarkSeen).toHaveBeenCalledTimes(2));
   });
 
-  it('swallows delivery failures', async () => {
+  it('swallows seen-report failures', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    mockMarkDelivered.mockRejectedValue(new Error('offline'));
+    mockMarkSeen.mockRejectedValue(new Error('offline'));
 
     renderHook(() => useConversationMeta('uid-me', 'uid-bob', [message('uid-bob', 1)]));
 

@@ -14,14 +14,14 @@ function message(overrides: Partial<Message> = {}): Message {
 }
 
 describe('messageStatusFor', () => {
-  it('is pending while the write is still local', () => {
-    expect(messageStatusFor(message({ pending: true }), null)).toBe('pending');
+  it('is sending while the write is still local', () => {
+    expect(messageStatusFor(message({ pending: true }), null)).toBe('sending');
   });
 
   // A serverTimestamp is null until it round-trips, so this is the same
   // situation seen from the data rather than the metadata.
-  it('is pending when the server timestamp has not landed', () => {
-    expect(messageStatusFor(message({ sentAt: null }), null)).toBe('pending');
+  it('is sending when the server timestamp has not landed', () => {
+    expect(messageStatusFor(message({ sentAt: null }), null)).toBe('sending');
   });
 
   it('is sent once on the server with nobody having received it', () => {
@@ -37,16 +37,16 @@ describe('messageStatusFor', () => {
     expect(messageStatusFor(message({ sentAt: 1000 }), 5000)).toBe('delivered');
   });
 
-  it('is read once the read mark reaches the send time', () => {
-    expect(messageStatusFor(message({ sentAt: 1000 }), 1000, 1000)).toBe('read');
+  it('is seen once the seen mark reaches the send time', () => {
+    expect(messageStatusFor(message({ sentAt: 1000 }), 1000, 1000)).toBe('seen');
   });
 
-  // Read is the stronger claim and wins even if the marks disagree.
-  it('prefers read over delivered', () => {
-    expect(messageStatusFor(message({ sentAt: 1000 }), 5000, 5000)).toBe('read');
+  // Seen is the stronger claim and wins even if the marks disagree.
+  it('prefers seen over delivered', () => {
+    expect(messageStatusFor(message({ sentAt: 1000 }), 5000, 5000)).toBe('seen');
   });
 
-  it('is not read when the read mark is older than the message', () => {
+  it('is not seen when the seen mark is older than the message', () => {
     expect(messageStatusFor(message({ sentAt: 2000 }), 2000, 1000)).toBe('delivered');
   });
 });

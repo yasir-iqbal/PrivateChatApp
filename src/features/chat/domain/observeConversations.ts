@@ -8,6 +8,7 @@ export type ConversationSummary = {
   otherUid: string;
   lastMessageText: string | null;
   lastMessageAt: number | null;
+  lastMessageSenderId: string | null;
 };
 
 export function observeConversations(
@@ -25,6 +26,7 @@ export function observeConversations(
           otherUid: record.participants.find((participant) => participant !== currentUid) ?? '',
           lastMessageText: record.lastMessageText,
           lastMessageAt: record.lastMessageAt,
+          lastMessageSenderId: record.lastMessageSenderId,
         }))
         // A conversation with no other participant is malformed; showing a
         // nameless row would be worse than omitting it.
