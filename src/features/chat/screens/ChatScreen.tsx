@@ -19,6 +19,8 @@ import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
+import { useState } from 'react';
+
 import { formatPresence } from '../../presence/domain/presence';
 import { useContactPresence } from '../../presence/hooks/useContactPresence';
 import { MessageBubble } from '../components/MessageBubble';
@@ -26,7 +28,8 @@ import type { Message } from '../domain/message';
 import { messageStatusFor } from '../domain/messageStatus';
 import { useConversationMeta } from '../hooks/useConversationMeta';
 import { useMessages } from '../hooks/useMessages';
-import { useSendImage } from '../hooks/useSendImage';
+import { useSendAttachment } from '../hooks/useSendAttachment';
+import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { useSendMessage } from '../hooks/useSendMessage';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Chat'> & {
@@ -45,7 +48,25 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   const { otherDeliveredAt, otherSeenAt } = useConversationMeta(authUser.uid, contactUid, messages);
   const { draft, setDraft, send, canSend, error: sendError } = useSendMessage(authUser.uid, contactUid);
   const presenceLabel = formatPresence(useContactPresence(contactUid));
-  const sendImage = useSendImage(authUser.uid, contactUid);
+  const attachment = useSendAttachment(authUser.uid, contactUid);
+  const recorder = useVoiceRecorder();
+  const [recorderError, setRecorderError] = useState<Error | null>(null);
+
+  async function startRecording() {
+    setRecorderError(null);
+    try {
+      await recorder.start();
+    } catch (error) {
+      setRecorderError(error as Error);
+    }
+  }
+
+  async function finishRecording() {
+    const recording = await recorder.stop();
+    if (recording) {
+      attachment.sendVoice(recording.uri, recording.durationMs);
+    }
+  }
 
   function renderMessage({ item }: { item: Message }) {
     const isMine = item.senderId === authUser.uid;
@@ -121,9 +142,9 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           />
         )}
 
-        {sendError || sendImage.error ? (
+        {sendError || attachment.error || recorderError ? (
           <Text style={[theme.typography.caption, styles.sendError, { color: theme.colors.error }]}>
-            {(sendError ?? sendImage.error)?.message}
+            {(sendError ?? attachment.error ?? recorderError)?.message}
           </Text>
         ) : null}
 
@@ -134,13 +155,13 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           ]}
         >
           <Pressable
-            onPress={sendImage.chooseAndSend}
-            disabled={sendImage.isSending}
+            onPress={attachment.chooseAttachment}
+            disabled={attachment.isSending || recorder.isRecording}
             hitSlop={8}
-            accessibilityLabel="Send photo"
+            accessibilityLabel="Add attachment"
             style={styles.attachButton}
           >
-            {sendImage.isSending ? (
+            {attachment.isSending ? (
               <ActivityIndicator color={theme.colors.icon} />
             ) : (
               <Ionicons name="attach" size={24} color={theme.colors.icon} />
@@ -149,7 +170,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Message"
+            placeholder={recorder.isRecording ? `Recording ${Math.round(recorder.elapsedMs / 1000)}s` : 'Message'}
             placeholderTextColor={theme.colors.textSecondary}
             multiline
             style={[
@@ -159,15 +180,31 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             ]}
             testID="chat-input"
           />
-          <Pressable
-            onPress={send}
-            disabled={!canSend}
-            hitSlop={8}
-            accessibilityLabel="Send message"
-            style={[styles.sendButton, { backgroundColor: theme.colors.primary, opacity: canSend ? 1 : 0.5 }]}
-          >
-            <Ionicons name="send" size={20} color={theme.colors.onPrimary} />
-          </Pressable>
+          {/* Same slot as WhatsApp: send while there is a draft, hold to
+              record a voice note when there is not. */}
+          {canSend ? (
+            <Pressable
+              onPress={send}
+              hitSlop={8}
+              accessibilityLabel="Send message"
+              style={[styles.sendButton, { backgroundColor: theme.colors.primary }]}
+            >
+              <Ionicons name="send" size={20} color={theme.colors.onPrimary} />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPressIn={startRecording}
+              onPressOut={finishRecording}
+              hitSlop={8}
+              accessibilityLabel="Hold to record voice message"
+              style={[
+                styles.sendButton,
+                { backgroundColor: recorder.isRecording ? theme.colors.error : theme.colors.primary },
+              ]}
+            >
+              <Ionicons name="mic" size={20} color={theme.colors.onPrimary} />
+            </Pressable>
+          )}
         </View>
       </KeyboardAvoidingView>
     </View>

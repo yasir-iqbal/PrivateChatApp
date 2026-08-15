@@ -37,9 +37,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow PrivateChat to access your photos to set a profile picture.",
-          "cameraPermission": "Allow PrivateChat to access your camera to take a profile picture.",
-          "microphonePermission": false
+          "photosPermission": "Allow PrivateChat to access your photos to share them in chats and set a profile picture.",
+          "cameraPermission": "Allow PrivateChat to access your camera to take photos and videos for your chats.",
+          "microphonePermission": "Allow PrivateChat to access your microphone to record voice messages and video."
         }
       ],
       [
@@ -50,7 +50,22 @@
           }
         }
       ],
-      "./plugins/withDisableFirebaseSPM.js"
+      "./plugins/withDisableFirebaseSPM.js",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow PrivateChat to access your microphone to record voice messages."
+        }
+      ],
+      "expo-video",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow PrivateChat to access your location so you can share it in a chat.",
+          "locationWhenInUsePermission": "Allow PrivateChat to access your location so you can share it in a chat.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
     ],
     "extra": {
       "googleWebClientId": "313451247671-k023p2n390iujg6lmduuj7ri23kb5sqt.apps.googleusercontent.com",

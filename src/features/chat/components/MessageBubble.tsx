@@ -3,7 +3,10 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../../shared/theme';
 import type { Message } from '../domain/message';
 import type { MessageStatus } from '../domain/messageStatus';
+import { LocationMessage } from './LocationMessage';
 import { MessageTicks } from './MessageTicks';
+import { VideoMessage } from './VideoMessage';
+import { VoiceMessage } from './VoiceMessage';
 
 type Props = {
   message: Message;
@@ -23,11 +26,21 @@ function formatTime(millis: number): string {
 
 export function MessageBubble({ message, isMine, status }: Props) {
   const theme = useTheme();
-  const isImage = message.type === 'image' && message.mediaUrl !== null;
+  const hasMedia = message.mediaUrl !== null;
+  const isImage = message.type === 'image' && hasMedia;
+  const isVideo = message.type === 'video' && hasMedia;
+  const isVoice = message.type === 'voice' && hasMedia;
+  const isLocation =
+    message.type === 'location' && message.latitude !== null && message.longitude !== null;
+  // Only image and video fill the bubble edge to edge; voice and location are
+  // laid out like text and keep the padding.
+  const isFramed = isImage || isVideo;
   const aspectRatio = Math.max(
     message.mediaAspectRatio ?? FALLBACK_ASPECT_RATIO,
     MIN_ASPECT_RATIO,
   );
+  const mediaHeight = IMAGE_WIDTH / aspectRatio;
+  const tint = isMine ? theme.colors.bubbleOutgoingText : theme.colors.bubbleIncomingText;
 
   return (
     <View style={[styles.row, isMine ? styles.rowMine : styles.rowTheirs]}>
@@ -35,37 +48,45 @@ export function MessageBubble({ message, isMine, status }: Props) {
         style={[
           styles.bubble,
           isMine ? styles.bubbleMine : styles.bubbleTheirs,
-          isImage && styles.bubbleImage,
+          isFramed && styles.bubbleImage,
           { backgroundColor: isMine ? theme.colors.bubbleOutgoing : theme.colors.bubbleIncoming },
         ]}
       >
         {isImage ? (
           <Image
             source={{ uri: message.mediaUrl as string }}
-            style={[styles.image, { width: IMAGE_WIDTH, height: IMAGE_WIDTH / aspectRatio }]}
+            style={[styles.image, { width: IMAGE_WIDTH, height: mediaHeight }]}
             resizeMode="cover"
             accessibilityLabel="Photo"
           />
+        ) : isVideo ? (
+          <VideoMessage
+            uri={message.mediaUrl as string}
+            durationMs={message.durationMs}
+            width={IMAGE_WIDTH}
+            height={mediaHeight}
+          />
+        ) : isVoice ? (
+          <VoiceMessage uri={message.mediaUrl as string} durationMs={message.durationMs} tint={tint} />
+        ) : isLocation ? (
+          <LocationMessage
+            latitude={message.latitude as number}
+            longitude={message.longitude as number}
+            tint={tint}
+          />
         ) : (
-          <Text
-            style={[
-              theme.typography.body,
-              { color: isMine ? theme.colors.bubbleOutgoingText : theme.colors.bubbleIncomingText },
-            ]}
-          >
-            {message.text}
-          </Text>
+          <Text style={[theme.typography.body, { color: tint }]}>{message.text}</Text>
         )}
 
         {/* Time and ticks sit on one line at the bottom-right, inside the
             bubble, the way WhatsApp lays them out. */}
-        <View style={[styles.meta, isImage && styles.metaOnImage]}>
+        <View style={[styles.meta, isFramed && styles.metaOnImage]}>
           <Text
             style={[
               styles.time,
               // Over a photo the meta needs its own contrast, since the image
               // behind it could be any colour.
-              { color: isImage ? '#FFFFFF' : theme.colors.bubbleMeta },
+              { color: isFramed ? '#FFFFFF' : theme.colors.bubbleMeta },
             ]}
           >
             {formatTime(message.sentAt ?? message.clientSentAt)}

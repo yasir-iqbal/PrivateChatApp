@@ -1,6 +1,6 @@
 import * as firestore from '@react-native-firebase/firestore';
 
-import type { Message } from '../domain/message';
+import type { Message, MessageType } from '../domain/message';
 
 export const CONVERSATIONS_COLLECTION = 'conversations';
 export const MESSAGES_COLLECTION = 'messages';
@@ -8,6 +8,10 @@ export const MESSAGES_COLLECTION = 'messages';
 // How many messages the chat screen keeps live. Older history needs paging,
 // which this first cut does not do.
 export const MESSAGE_PAGE_SIZE = 100;
+
+// Anything unrecognised is read as text, so a message written by a newer
+// client cannot crash an older one.
+const MESSAGE_TYPES: MessageType[] = ['text', 'image', 'video', 'voice', 'location'];
 
 // Per-participant high-water marks, keyed by uid. A message counts as
 // delivered once the other participant's mark is at or past its send time.
@@ -42,10 +46,13 @@ export type ChatRepository = {
 };
 
 export type OutgoingMessage = {
-  type: 'text' | 'image';
+  type: MessageType;
   text: string;
   mediaUrl?: string;
   mediaAspectRatio?: number;
+  durationMs?: number;
+  latitude?: number;
+  longitude?: number;
   // What the conversation's lastMessageText should read, which is not the
   // message text for a photo.
   preview: string;
@@ -108,6 +115,9 @@ export const firestoreChatRepository: ChatRepository = {
       text: message.text,
       ...(message.mediaUrl ? { mediaUrl: message.mediaUrl } : {}),
       ...(message.mediaAspectRatio ? { mediaAspectRatio: message.mediaAspectRatio } : {}),
+      ...(message.durationMs !== undefined ? { durationMs: message.durationMs } : {}),
+      ...(message.latitude !== undefined ? { latitude: message.latitude } : {}),
+      ...(message.longitude !== undefined ? { longitude: message.longitude } : {}),
       sentAt: firestore.serverTimestamp(),
       clientSentAt,
     });
@@ -132,11 +142,16 @@ export const firestoreChatRepository: ChatRepository = {
             return {
               id: document.id,
               senderId: typeof data.senderId === 'string' ? data.senderId : '',
-              type: data.type === 'image' ? 'image' : 'text',
+              type: MESSAGE_TYPES.includes(data.type as MessageType)
+                ? (data.type as MessageType)
+                : 'text',
               text: typeof data.text === 'string' ? data.text : '',
               mediaUrl: typeof data.mediaUrl === 'string' ? data.mediaUrl : null,
               mediaAspectRatio:
                 typeof data.mediaAspectRatio === 'number' ? data.mediaAspectRatio : null,
+              durationMs: typeof data.durationMs === 'number' ? data.durationMs : null,
+              latitude: typeof data.latitude === 'number' ? data.latitude : null,
+              longitude: typeof data.longitude === 'number' ? data.longitude : null,
               sentAt: toMillis(data.sentAt),
               clientSentAt: typeof data.clientSentAt === 'number' ? data.clientSentAt : 0,
               pending: document.metadata?.hasPendingWrites ?? false,

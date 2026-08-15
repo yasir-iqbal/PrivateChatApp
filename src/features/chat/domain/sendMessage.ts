@@ -1,7 +1,6 @@
 import { firestoreChatRepository, type ChatRepository } from '../data/chatRepository';
-import { nativeChatMediaRepository, type ChatMediaRepository } from '../data/chatMediaRepository';
 import { conversationIdFor } from './conversation';
-import { IMAGE_PREVIEW_TEXT, isSendableMessage } from './message';
+import { isSendableMessage } from './message';
 
 export async function sendMessage(
   senderUid: string,
@@ -22,32 +21,4 @@ export async function sendMessage(
     senderUid,
     { type: 'text', text: trimmed, preview: trimmed },
   );
-}
-
-// Returns false when the picker was dismissed, so the caller can tell a
-// cancellation apart from a failure.
-export async function sendImageMessage(
-  senderUid: string,
-  recipientUid: string,
-  source: 'library' | 'camera',
-  mediaRepo: ChatMediaRepository = nativeChatMediaRepository,
-  repo: ChatRepository = firestoreChatRepository,
-): Promise<boolean> {
-  const picked = await mediaRepo.pickImage(source);
-  if (!picked) return false;
-
-  const conversationId = conversationIdFor(senderUid, recipientUid);
-  const compressed = await mediaRepo.compressImage(picked.uri);
-  // Uploaded before the message is written, so a message can never point at a
-  // file that does not exist.
-  const mediaUrl = await mediaRepo.uploadImage(conversationId, compressed);
-
-  await repo.sendMessage(conversationId, [senderUid, recipientUid].sort(), senderUid, {
-    type: 'image',
-    text: '',
-    mediaUrl,
-    mediaAspectRatio: picked.height > 0 ? picked.width / picked.height : undefined,
-    preview: IMAGE_PREVIEW_TEXT,
-  });
-  return true;
 }

@@ -16,6 +16,15 @@ service firebase.storage {
              && request.resource.contentType.matches('image/.*');
     }
 
+    // Video and audio are not re-encoded on device, so the ceiling has to
+    // cover a minute of phone-camera footage.
+    function isReasonableChatMedia() {
+      return request.resource.size < 60 * 1024 * 1024
+             && (request.resource.contentType.matches('image/.*')
+                 || request.resource.contentType.matches('video/.*')
+                 || request.resource.contentType.matches('audio/.*'));
+    }
+
     // Profile photos. Readable by any signed-in user because contacts and
     // chat headers show each other's avatars; writable only by their owner.
     match /avatars/{uid}/{fileName} {
@@ -35,8 +44,8 @@ service firebase.storage {
       }
 
       allow read: if inConversation();
-      allow create: if inConversation() && isReasonableImage();
-      // Sent photos are as immutable as sent messages.
+      allow create: if inConversation() && isReasonableChatMedia();
+      // Sent media is as immutable as sent messages.
       allow update, delete: if false;
     }
   }

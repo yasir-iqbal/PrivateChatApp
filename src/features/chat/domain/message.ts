@@ -1,17 +1,23 @@
 // Messages written before media existed have no type field, so absent means
 // text rather than invalid.
-export type MessageType = 'text' | 'image';
+export type MessageType = 'text' | 'image' | 'video' | 'voice' | 'location';
 
 export type Message = {
   id: string;
   senderId: string;
   type: MessageType;
   text: string;
-  // Set for image messages; the download URL of the uploaded file.
+  // Download URL of the uploaded file, for image, video and voice.
   mediaUrl: string | null;
-  // Stored so the bubble can reserve the right shape before the image loads,
-  // instead of jumping once it does.
+  // Stored so an image or video bubble reserves the right shape before the
+  // media loads, instead of jumping once it does.
   mediaAspectRatio: number | null;
+  // Length of a voice note or video, so the bubble can show it before the
+  // file is fetched.
+  durationMs: number | null;
+  // Location messages only.
+  latitude: number | null;
+  longitude: number | null;
   // Server time, authoritative but null until the write reaches the server.
   sentAt: number | null;
   // Client time, set immediately. Used for ordering so a just-sent message
@@ -28,9 +34,21 @@ export function isSendableMessage(text: string): boolean {
   return trimmed.length > 0 && trimmed.length <= MAX_MESSAGE_LENGTH;
 }
 
-// What the chat list shows in place of a photo, since there is no text.
-export const IMAGE_PREVIEW_TEXT = '\uD83D\uDCF7 Photo';
+// What the chat list shows in place of media, since none of it has text.
+export const PREVIEW_TEXT: Record<Exclude<MessageType, 'text'>, string> = {
+  image: '📷 Photo',
+  video: '🎥 Video',
+  voice: '🎤 Voice message',
+  location: '📍 Location',
+};
 
 export function messagePreview(message: Pick<Message, 'type' | 'text'>): string {
-  return message.type === 'image' ? IMAGE_PREVIEW_TEXT : message.text;
+  return message.type === 'text' ? message.text : PREVIEW_TEXT[message.type];
+}
+
+export function formatDuration(millis: number): string {
+  const totalSeconds = Math.max(0, Math.round(millis / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }

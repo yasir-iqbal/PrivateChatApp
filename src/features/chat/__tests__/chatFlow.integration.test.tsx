@@ -83,7 +83,7 @@ describe('chat flow', () => {
 
     // Firestore echoes the local write straight back through the listener.
     emit?.([
-      { id: 'm1', senderId: 'uid-me', type: 'text' as const, mediaUrl: null, mediaAspectRatio: null, text: 'hello Bob', sentAt: null, clientSentAt: 1, pending: true },
+      { id: 'm1', senderId: 'uid-me', type: 'text' as const, mediaUrl: null, mediaAspectRatio: null, durationMs: null, latitude: null, longitude: null, text: 'hello Bob', sentAt: null, clientSentAt: 1, pending: true },
     ]);
     await waitFor(() => expect(screen.getByText('hello Bob')).toBeTruthy());
   });
@@ -104,7 +104,7 @@ describe('chat flow', () => {
     await waitFor(() => expect(screen.getByText('No messages yet. Say hello.')).toBeTruthy());
 
     emit?.([
-      { id: 'm1', senderId: 'uid-bob', type: 'text' as const, mediaUrl: null, mediaAspectRatio: null, text: 'hi there', sentAt: 2, clientSentAt: 2, pending: false },
+      { id: 'm1', senderId: 'uid-bob', type: 'text' as const, mediaUrl: null, mediaAspectRatio: null, durationMs: null, latitude: null, longitude: null, text: 'hi there', sentAt: 2, clientSentAt: 2, pending: false },
     ]);
 
     await waitFor(() => expect(screen.getByText('hi there')).toBeTruthy());
