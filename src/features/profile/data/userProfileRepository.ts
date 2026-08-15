@@ -14,6 +14,10 @@ export type UserProfileRepository = {
   upsertProfile: (profile: UserProfile) => Promise<void>;
   findByEmail: (email: string) => Promise<UserProfile | null>;
   getProfiles: (uids: string[]) => Promise<UserProfile[]>;
+  // Presence lives on the same document: one heartbeat field rather than a
+  // parallel collection to keep in step with it.
+  touchLastActive: (uid: string, email: string) => Promise<void>;
+  observeLastActive: (uid: string, onChange: (lastActiveAt: number | null) => void) => () => void;
 };
 
 export const USERS_COLLECTION = 'users';
@@ -79,6 +83,33 @@ export const firestoreUserProfileRepository: UserProfileRepository = {
 
     const profileSnapshot = await firestore.getDoc(firestore.doc(db, USERS_COLLECTION, uid));
     return toUserProfile(profileSnapshot.id, profileSnapshot.data());
+  },
+
+  async touchLastActive(uid, email) {
+    const db = firestore.getFirestore();
+    // uid and email ride along because the rules check both on every write to
+    // this document; a merge without them would fail validation.
+    await firestore.setDoc(
+      firestore.doc(db, USERS_COLLECTION, uid),
+      { uid, email: normalizeEmail(email), lastActiveAt: firestore.serverTimestamp() },
+      { merge: true },
+    );
+  },
+
+  observeLastActive(uid, onChange) {
+    const db = firestore.getFirestore();
+    return firestore.onSnapshot(
+      firestore.doc(db, USERS_COLLECTION, uid),
+      (snapshot) => {
+        const value = snapshot.data()?.lastActiveAt;
+        onChange(
+          value && typeof value === 'object' && 'toMillis' in value
+            ? (value as { toMillis: () => number }).toMillis()
+            : null,
+        );
+      },
+      () => onChange(null),
+    );
   },
 
   async getProfiles(uids) {

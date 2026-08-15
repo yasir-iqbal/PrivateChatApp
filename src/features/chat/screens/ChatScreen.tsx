@@ -19,6 +19,8 @@ import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
+import { formatPresence } from '../../presence/domain/presence';
+import { useContactPresence } from '../../presence/hooks/useContactPresence';
 import { MessageBubble } from '../components/MessageBubble';
 import type { Message } from '../domain/message';
 import { messageStatusFor } from '../domain/messageStatus';
@@ -41,6 +43,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   const { messages, loading, error } = useMessages(authUser.uid, contactUid);
   const { otherDeliveredAt, otherSeenAt } = useConversationMeta(authUser.uid, contactUid, messages);
   const { draft, setDraft, send, canSend, error: sendError } = useSendMessage(authUser.uid, contactUid);
+  const presenceLabel = formatPresence(useContactPresence(contactUid));
 
   function renderMessage({ item }: { item: Message }) {
     const isMine = item.senderId === authUser.uid;
@@ -67,12 +70,22 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
         <View style={styles.headerAvatar}>
           <ContactAvatar name={contactName} photoURL={contactPhotoURL ?? null} size={38} />
         </View>
-        <Text
-          style={[theme.typography.body, styles.headerName, { color: theme.colors.textPrimary }]}
-          numberOfLines={1}
-        >
-          {contactName}
-        </Text>
+        <View style={styles.headerText}>
+          <Text
+            style={[theme.typography.body, styles.headerName, { color: theme.colors.textPrimary }]}
+            numberOfLines={1}
+          >
+            {contactName}
+          </Text>
+          {presenceLabel ? (
+            <Text
+              style={[styles.headerPresence, { color: theme.colors.textSecondary }]}
+              numberOfLines={1}
+            >
+              {presenceLabel}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -158,10 +171,15 @@ const styles = StyleSheet.create({
   headerAvatar: {
     marginLeft: 12,
   },
-  headerName: {
+  headerText: {
     flex: 1,
     marginLeft: 10,
+  },
+  headerName: {
     fontWeight: '600',
+  },
+  headerPresence: {
+    fontSize: 12,
   },
   list: {
     paddingVertical: 8,

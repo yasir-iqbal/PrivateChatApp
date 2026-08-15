@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuthState } from '../features/auth/hooks/useAuthState';
 import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
 import { useProfileSetupStatus } from '../features/profile/hooks/useProfileSetupStatus';
+import { usePresenceReporter } from '../features/presence/hooks/usePresenceReporter';
 import { useSyncUserProfile } from '../features/profile/hooks/useSyncUserProfile';
 import { ProfileSetupScreen } from '../features/profile/screens/ProfileSetupScreen';
 import { useTheme } from '../shared/theme';
@@ -26,6 +27,9 @@ export function RootNavigator() {
 
   // Publishes the user into the users collection so contacts can find them.
   useSyncUserProfile(authUser);
+  // Mounted here rather than on a screen so the heartbeat continues wherever
+  // the user navigates.
+  usePresenceReporter(authUser?.uid, authUser?.email);
 
   const needsProfileStatus = !!authUser?.emailVerified && !authUser?.photoURL;
   const { hasSkipped, loading: profileStatusLoading, markSkipped } = useProfileSetupStatus(

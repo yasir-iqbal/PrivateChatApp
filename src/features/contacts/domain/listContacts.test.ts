@@ -18,6 +18,8 @@ function fakeProfileRepo(profiles: UserProfile[]): jest.Mocked<UserProfileReposi
     upsertProfile: jest.fn(),
     findByEmail: jest.fn(),
     getProfiles: jest.fn().mockResolvedValue(profiles),
+    touchLastActive: jest.fn(),
+    observeLastActive: jest.fn(),
   };
 }
 

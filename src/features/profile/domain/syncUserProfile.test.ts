@@ -7,6 +7,8 @@ function fakeRepo(): jest.Mocked<UserProfileRepository> {
     upsertProfile: jest.fn().mockResolvedValue(undefined),
     findByEmail: jest.fn(),
     getProfiles: jest.fn(),
+    touchLastActive: jest.fn(),
+    observeLastActive: jest.fn(),
   };
 }
 
