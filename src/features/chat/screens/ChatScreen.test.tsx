@@ -6,16 +6,19 @@ import { ThemeProvider } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import type { Message } from '../domain/message';
 import { useConversationMeta } from '../hooks/useConversationMeta';
+import { useSendImage } from '../hooks/useSendImage';
 import { useMessages } from '../hooks/useMessages';
 import { useSendMessage } from '../hooks/useSendMessage';
 
 jest.mock('../hooks/useMessages');
 jest.mock('../hooks/useSendMessage');
 jest.mock('../hooks/useConversationMeta');
+jest.mock('../hooks/useSendImage');
 
 const mockUseMessages = useMessages as jest.MockedFunction<typeof useMessages>;
 const mockUseSendMessage = useSendMessage as jest.MockedFunction<typeof useSendMessage>;
 const mockUseConversationMeta = useConversationMeta as jest.MockedFunction<typeof useConversationMeta>;
+const mockUseSendImage = useSendImage as jest.MockedFunction<typeof useSendImage>;
 
 const authUser: AuthUser = {
   uid: 'uid-me',
@@ -29,6 +32,9 @@ function msg(overrides: Partial<Message> = {}): Message {
   return {
     id: 'm1',
     senderId: 'uid-me',
+    type: 'text',
+    mediaUrl: null,
+    mediaAspectRatio: null,
     text: 'hello',
     sentAt: 1,
     clientSentAt: 1,
@@ -74,6 +80,7 @@ describe('ChatScreen', () => {
   beforeEach(() => {
     mockUseSendMessage.mockReturnValue(sendStub());
     mockUseConversationMeta.mockReturnValue({ otherDeliveredAt: null, otherSeenAt: null });
+    mockUseSendImage.mockReturnValue({ chooseAndSend: jest.fn(), isSending: false, error: null });
   });
 
   it('shows the contact name in the header', () => {

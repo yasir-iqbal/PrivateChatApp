@@ -26,6 +26,7 @@ import type { Message } from '../domain/message';
 import { messageStatusFor } from '../domain/messageStatus';
 import { useConversationMeta } from '../hooks/useConversationMeta';
 import { useMessages } from '../hooks/useMessages';
+import { useSendImage } from '../hooks/useSendImage';
 import { useSendMessage } from '../hooks/useSendMessage';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Chat'> & {
@@ -44,6 +45,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   const { otherDeliveredAt, otherSeenAt } = useConversationMeta(authUser.uid, contactUid, messages);
   const { draft, setDraft, send, canSend, error: sendError } = useSendMessage(authUser.uid, contactUid);
   const presenceLabel = formatPresence(useContactPresence(contactUid));
+  const sendImage = useSendImage(authUser.uid, contactUid);
 
   function renderMessage({ item }: { item: Message }) {
     const isMine = item.senderId === authUser.uid;
@@ -119,9 +121,9 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           />
         )}
 
-        {sendError ? (
+        {sendError || sendImage.error ? (
           <Text style={[theme.typography.caption, styles.sendError, { color: theme.colors.error }]}>
-            {sendError.message}
+            {(sendError ?? sendImage.error)?.message}
           </Text>
         ) : null}
 
@@ -131,6 +133,19 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             { paddingBottom: androidKeyboardInset > 0 ? 8 : Math.max(insets.bottom, 8) },
           ]}
         >
+          <Pressable
+            onPress={sendImage.chooseAndSend}
+            disabled={sendImage.isSending}
+            hitSlop={8}
+            accessibilityLabel="Send photo"
+            style={styles.attachButton}
+          >
+            {sendImage.isSending ? (
+              <ActivityIndicator color={theme.colors.icon} />
+            ) : (
+              <Ionicons name="attach" size={24} color={theme.colors.icon} />
+            )}
+          </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -207,6 +222,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
+  },
+  attachButton: {
+    width: 40,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButton: {
     width: 46,

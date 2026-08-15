@@ -21,7 +21,7 @@ export type ChatRepository = {
     conversationId: string,
     participants: string[],
     senderId: string,
-    text: string,
+    message: OutgoingMessage,
   ) => Promise<void>;
   observeMessages: (
     conversationId: string,
@@ -39,6 +39,16 @@ export type ChatRepository = {
     onChange: (conversations: ConversationRecord[]) => void,
     onError: (error: Error) => void,
   ) => () => void;
+};
+
+export type OutgoingMessage = {
+  type: 'text' | 'image';
+  text: string;
+  mediaUrl?: string;
+  mediaAspectRatio?: number;
+  // What the conversation's lastMessageText should read, which is not the
+  // message text for a photo.
+  preview: string;
 };
 
 export type ConversationRecord = {
@@ -69,7 +79,7 @@ function toMillisMap(value: unknown): Record<string, number> {
 }
 
 export const firestoreChatRepository: ChatRepository = {
-  async sendMessage(conversationId, participants, senderId, text) {
+  async sendMessage(conversationId, participants, senderId, message) {
     const db = firestore.getFirestore();
     const conversationRef = firestore.doc(db, CONVERSATIONS_COLLECTION, conversationId);
     const messageRef = firestore.doc(
@@ -85,7 +95,7 @@ export const firestoreChatRepository: ChatRepository = {
       conversationRef,
       {
         participants,
-        lastMessageText: text,
+        lastMessageText: message.preview,
         lastMessageAt: firestore.serverTimestamp(),
         lastMessageSenderId: senderId,
         updatedAt: firestore.serverTimestamp(),
@@ -94,7 +104,10 @@ export const firestoreChatRepository: ChatRepository = {
     );
     batch.set(messageRef, {
       senderId,
-      text,
+      type: message.type,
+      text: message.text,
+      ...(message.mediaUrl ? { mediaUrl: message.mediaUrl } : {}),
+      ...(message.mediaAspectRatio ? { mediaAspectRatio: message.mediaAspectRatio } : {}),
       sentAt: firestore.serverTimestamp(),
       clientSentAt,
     });
@@ -119,7 +132,11 @@ export const firestoreChatRepository: ChatRepository = {
             return {
               id: document.id,
               senderId: typeof data.senderId === 'string' ? data.senderId : '',
+              type: data.type === 'image' ? 'image' : 'text',
               text: typeof data.text === 'string' ? data.text : '',
+              mediaUrl: typeof data.mediaUrl === 'string' ? data.mediaUrl : null,
+              mediaAspectRatio:
+                typeof data.mediaAspectRatio === 'number' ? data.mediaAspectRatio : null,
               sentAt: toMillis(data.sentAt),
               clientSentAt: typeof data.clientSentAt === 'number' ? data.clientSentAt : 0,
               pending: document.metadata?.hasPendingWrites ?? false,

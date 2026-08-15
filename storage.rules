@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Deploy with:  firebase deploy --only storage
+// Firebase Storage has its own rules, entirely separate from Firestore's.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 5 MB. The client compresses to roughly 200 KB, so anything near this
+    // limit did not come from the app.
+    function isReasonableImage() {
+      return request.resource.size < 5 * 1024 * 1024
+             && request.resource.contentType.matches('image/.*');
+    }
+
+    // Profile photos. Readable by any signed-in user because contacts and
+    // chat headers show each other's avatars; writable only by their owner.
+    match /avatars/{uid}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid && isReasonableImage();
+    }
+
+    // Chat photos, under the conversation they belong to.
+    //
+    // The conversation ID is the two uids sorted and joined, so membership can
+    // be read straight off the path — the same trick the Firestore message
+    // rules use, and necessary here because Storage rules cannot read
+    // Firestore documents at all.
+    match /chatMedia/{conversationId}/{fileName} {
+      function inConversation() {
+        return isSignedIn() && request.auth.uid in conversationId.split('_');
+      }
+
+      allow read: if inConversation();
+      allow create: if inConversation() && isReasonableImage();
+      // Sent photos are as immutable as sent messages.
+      allow update, delete: if false;
+    }
+  }
+}

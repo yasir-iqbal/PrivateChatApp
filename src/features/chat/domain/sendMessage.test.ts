@@ -19,7 +19,11 @@ describe('sendMessage', () => {
 
     await sendMessage('uid-b', 'uid-a', 'hello', repo);
 
-    expect(repo.sendMessage).toHaveBeenCalledWith('uid-a_uid-b', ['uid-a', 'uid-b'], 'uid-b', 'hello');
+    expect(repo.sendMessage).toHaveBeenCalledWith('uid-a_uid-b', ['uid-a', 'uid-b'], 'uid-b', {
+      type: 'text',
+      text: 'hello',
+      preview: 'hello',
+    });
   });
 
   it('trims the text before sending', async () => {
@@ -27,7 +31,12 @@ describe('sendMessage', () => {
 
     await sendMessage('uid-a', 'uid-b', '  hello  ', repo);
 
-    expect(repo.sendMessage).toHaveBeenCalledWith(expect.any(String), expect.any(Array), 'uid-a', 'hello');
+    expect(repo.sendMessage).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      'uid-a',
+      expect.objectContaining({ text: 'hello' }),
+    );
   });
 
   // Guarded in the domain, not just the UI, so no other caller can bypass it.

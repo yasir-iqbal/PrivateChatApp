@@ -5,6 +5,9 @@ function message(overrides: Partial<Message> = {}): Message {
   return {
     id: 'm1',
     senderId: 'uid-me',
+    type: 'text',
+    mediaUrl: null,
+    mediaAspectRatio: null,
     text: 'hi',
     sentAt: 1000,
     clientSentAt: 1000,
