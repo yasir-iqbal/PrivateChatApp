@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
-import { Alert } from 'react-native';
+import { useState } from 'react';
 
+import type { AttachmentChoice } from '../components/AttachmentSheet';
 import {
   sendImageMessage,
   sendLocationMessage,
@@ -8,12 +9,11 @@ import {
   sendVoiceMessage,
 } from '../domain/sendMediaMessage';
 
-type Attachment =
-  | { kind: 'image' | 'video'; source: 'library' | 'camera' }
-  | { kind: 'location' }
-  | { kind: 'voice'; uri: string; durationMs: number };
+type Attachment = AttachmentChoice | { kind: 'voice'; uri: string; durationMs: number };
 
 export function useSendAttachment(currentUid: string, otherUid: string) {
+  const [isSheetOpen, setSheetOpen] = useState(false);
+
   const mutation = useMutation({
     mutationFn: async (attachment: Attachment): Promise<void> => {
       switch (attachment.kind) {
@@ -32,26 +32,13 @@ export function useSendAttachment(currentUid: string, otherUid: string) {
     },
   });
 
-  // An action sheet rather than a row of buttons in the composer, which is
-  // where both WhatsApp and the platform conventions put this choice.
-  function chooseAttachment() {
-    Alert.alert('Send', undefined, [
-      { text: 'Photo — camera', onPress: () => mutation.mutate({ kind: 'image', source: 'camera' }) },
-      { text: 'Photo — library', onPress: () => mutation.mutate({ kind: 'image', source: 'library' }) },
-      { text: 'Video — camera', onPress: () => mutation.mutate({ kind: 'video', source: 'camera' }) },
-      { text: 'Video — library', onPress: () => mutation.mutate({ kind: 'video', source: 'library' }) },
-      { text: 'Location', onPress: () => mutation.mutate({ kind: 'location' }) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  }
-
-  function sendVoice(uri: string, durationMs: number) {
-    mutation.mutate({ kind: 'voice', uri, durationMs });
-  }
-
   return {
-    chooseAttachment,
-    sendVoice,
+    isSheetOpen,
+    openSheet: () => setSheetOpen(true),
+    closeSheet: () => setSheetOpen(false),
+    choose: (choice: AttachmentChoice) => mutation.mutate(choice),
+    sendVoice: (uri: string, durationMs: number) =>
+      mutation.mutate({ kind: 'voice', uri, durationMs }),
     isSending: mutation.isPending,
     error: mutation.error as Error | null,
   };

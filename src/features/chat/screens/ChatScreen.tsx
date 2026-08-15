@@ -23,6 +23,7 @@ import { useState } from 'react';
 
 import { formatPresence } from '../../presence/domain/presence';
 import { useContactPresence } from '../../presence/hooks/useContactPresence';
+import { AttachmentSheet } from '../components/AttachmentSheet';
 import { MessageBubble } from '../components/MessageBubble';
 import type { Message } from '../domain/message';
 import { messageStatusFor } from '../domain/messageStatus';
@@ -155,7 +156,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           ]}
         >
           <Pressable
-            onPress={attachment.chooseAttachment}
+            onPress={attachment.openSheet}
             disabled={attachment.isSending || recorder.isRecording}
             hitSlop={8}
             accessibilityLabel="Add attachment"
@@ -207,6 +208,12 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <AttachmentSheet
+        visible={attachment.isSheetOpen}
+        onClose={attachment.closeSheet}
+        onChoose={attachment.choose}
+      />
     </View>
   );
 }

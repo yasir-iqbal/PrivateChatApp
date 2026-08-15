@@ -87,7 +87,10 @@ describe('ChatScreen', () => {
     mockUseSendMessage.mockReturnValue(sendStub());
     mockUseConversationMeta.mockReturnValue({ otherDeliveredAt: null, otherSeenAt: null });
     mockUseSendAttachment.mockReturnValue({
-      chooseAttachment: jest.fn(),
+      isSheetOpen: false,
+      openSheet: jest.fn(),
+      closeSheet: jest.fn(),
+      choose: jest.fn(),
       sendVoice: jest.fn(),
       isSending: false,
       error: null,
