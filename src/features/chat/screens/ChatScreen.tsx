@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useKeyboardHeight } from '../../../shared/hooks/useKeyboardHeight';
+
 import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
@@ -31,6 +33,10 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Chat'> & {
 export function ChatScreen({ navigation, route, authUser }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+  // iOS keeps using KeyboardAvoidingView; only Android needs manual padding,
+  // and applying both would push the composer up twice.
+  const androidKeyboardInset = Platform.OS === 'android' ? keyboardHeight : 0;
   const { contactUid, contactName, contactPhotoURL } = route.params;
   const { messages, loading, error } = useMessages(authUser.uid, contactUid);
   const { otherDeliveredAt, otherSeenAt } = useConversationMeta(authUser.uid, contactUid, messages);
@@ -70,7 +76,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
       </View>
 
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, { paddingBottom: androidKeyboardInset }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={8}
       >
@@ -106,7 +112,12 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           </Text>
         ) : null}
 
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <View
+          style={[
+            styles.composer,
+            { paddingBottom: androidKeyboardInset > 0 ? 8 : Math.max(insets.bottom, 8) },
+          ]}
+        >
           <TextInput
             value={draft}
             onChangeText={setDraft}
