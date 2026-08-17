@@ -7,6 +7,7 @@ import type { AuthUser } from '../../auth/domain/authUser';
 import type { Message } from '../domain/message';
 import { useConversationMeta } from '../hooks/useConversationMeta';
 import { useSendAttachment } from '../hooks/useSendAttachment';
+import { useBlockStatus } from '../../contacts/hooks/useBlockStatus';
 import { useDeleteMessage } from '../hooks/useDeleteMessage';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { useMessages } from '../hooks/useMessages';
@@ -18,6 +19,7 @@ jest.mock('../hooks/useConversationMeta');
 jest.mock('../hooks/useSendAttachment');
 jest.mock('../hooks/useVoiceRecorder');
 jest.mock('../hooks/useDeleteMessage');
+jest.mock('../../contacts/hooks/useBlockStatus');
 
 const mockUseMessages = useMessages as jest.MockedFunction<typeof useMessages>;
 const mockUseSendMessage = useSendMessage as jest.MockedFunction<typeof useSendMessage>;
@@ -25,6 +27,7 @@ const mockUseConversationMeta = useConversationMeta as jest.MockedFunction<typeo
 const mockUseSendAttachment = useSendAttachment as jest.MockedFunction<typeof useSendAttachment>;
 const mockUseVoiceRecorder = useVoiceRecorder as jest.MockedFunction<typeof useVoiceRecorder>;
 const mockUseDeleteMessage = useDeleteMessage as jest.MockedFunction<typeof useDeleteMessage>;
+const mockUseBlockStatus = useBlockStatus as jest.MockedFunction<typeof useBlockStatus>;
 
 const authUser: AuthUser = {
   uid: 'uid-me',
@@ -107,6 +110,12 @@ describe('ChatScreen', () => {
       stop: jest.fn().mockResolvedValue({ status: 'idle' }),
     });
     mockUseDeleteMessage.mockReturnValue({ confirmDelete: jest.fn(), error: null });
+    mockUseBlockStatus.mockReturnValue({
+      blocked: false,
+      toggle: jest.fn(),
+      isPending: false,
+      error: null,
+    });
   });
 
   it('shows the contact name in the header', () => {
@@ -166,5 +175,47 @@ describe('ChatScreen', () => {
     fireEvent.changeText(screen.getByTestId('chat-input'), 'typing');
 
     expect(setDraft).toHaveBeenCalledWith('typing');
+  });
+
+  it('replaces the composer with a notice when the contact is blocked', () => {
+    mockUseMessages.mockReturnValue({ messages: [], loading: false, error: null });
+    mockUseBlockStatus.mockReturnValue({
+      blocked: true,
+      toggle: jest.fn(),
+      isPending: false,
+      error: null,
+    });
+
+    renderScreen();
+
+    expect(screen.getByText(/You blocked this contact/)).toBeTruthy();
+    expect(screen.queryByTestId('chat-input')).toBeNull();
+  });
+
+  // Hiding presence from someone you blocked is the point; showing "online"
+  // for a contact you have cut off reads as a bug.
+  it('hides presence for a blocked contact', () => {
+    mockUseMessages.mockReturnValue({ messages: [], loading: false, error: null });
+    mockUseBlockStatus.mockReturnValue({
+      blocked: true,
+      toggle: jest.fn(),
+      isPending: false,
+      error: null,
+    });
+
+    renderScreen();
+
+    expect(screen.getByLabelText('Unblock contact')).toBeTruthy();
+  });
+
+  it('offers blocking from the header when not blocked', () => {
+    mockUseMessages.mockReturnValue({ messages: [], loading: false, error: null });
+    const toggle = jest.fn();
+    mockUseBlockStatus.mockReturnValue({ blocked: false, toggle, isPending: false, error: null });
+
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Block contact'));
+
+    expect(toggle).toHaveBeenCalledWith('Bob');
   });
 });

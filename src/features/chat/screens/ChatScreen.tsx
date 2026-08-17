@@ -18,6 +18,7 @@ import { useKeyboardHeight } from '../../../shared/hooks/useKeyboardHeight';
 import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
+import { useBlockStatus } from '../../contacts/hooks/useBlockStatus';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
 import { useState } from 'react';
 
@@ -52,6 +53,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   const presenceLabel = formatPresence(useContactPresence(contactUid));
   const attachment = useSendAttachment(authUser.uid, contactUid);
   const deletion = useDeleteMessage(authUser.uid, contactUid);
+  const block = useBlockStatus(authUser.uid, contactUid);
   const recorder = useVoiceRecorder();
   const [recorderError, setRecorderError] = useState<Error | null>(null);
 
@@ -107,7 +109,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           >
             {contactName}
           </Text>
-          {presenceLabel ? (
+          {presenceLabel && !block.blocked ? (
             <Text
               style={[styles.headerPresence, { color: theme.colors.textSecondary }]}
               numberOfLines={1}
@@ -116,6 +118,17 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             </Text>
           ) : null}
         </View>
+        <Pressable
+          onPress={() => block.toggle(contactName)}
+          hitSlop={8}
+          accessibilityLabel={block.blocked ? 'Unblock contact' : 'Block contact'}
+        >
+          <Ionicons
+            name={block.blocked ? 'lock-closed' : 'ellipsis-vertical'}
+            size={22}
+            color={block.blocked ? theme.colors.error : theme.colors.icon}
+          />
+        </Pressable>
       </View>
 
       <KeyboardAvoidingView
@@ -149,12 +162,27 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           />
         )}
 
-        {sendError || attachment.error || recorderError || deletion.error ? (
+        {sendError || attachment.error || recorderError || deletion.error || block.error ? (
           <Text style={[theme.typography.caption, styles.sendError, { color: theme.colors.error }]}>
-            {(sendError ?? attachment.error ?? recorderError ?? deletion.error)?.message}
+            {(sendError ?? attachment.error ?? recorderError ?? deletion.error ?? block.error)?.message}
           </Text>
         ) : null}
 
+        {block.blocked ? (
+          <View
+            style={[
+              styles.blockedNotice,
+              {
+                borderTopColor: theme.colors.divider,
+                paddingBottom: Math.max(insets.bottom, 12),
+              },
+            ]}
+          >
+            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary, textAlign: 'center' }]}>
+              You blocked this contact. Tap the lock to unblock.
+            </Text>
+          </View>
+        ) : (
         <View
           style={[
             styles.composer,
@@ -213,6 +241,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             </Pressable>
           )}
         </View>
+        )}
       </KeyboardAvoidingView>
 
       <AttachmentSheet
@@ -258,6 +287,11 @@ const styles = StyleSheet.create({
   sendError: {
     marginHorizontal: 12,
     marginBottom: 4,
+  },
+  blockedNotice: {
+    paddingTop: 14,
+    paddingHorizontal: 24,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   composer: {
     flexDirection: 'row',

@@ -39,6 +39,14 @@ service cloud.firestore {
       match /contacts/{contactUid} {
         allow read, write: if isOwner(uid);
       }
+
+      // Who this user has blocked. Private to them, so a blocked person is
+      // never told. The message rule below still reads it with exists(), which
+      // bypasses these read rules — that is what lets a block be enforced
+      // without the sender being able to see the list.
+      match /blocked/{blockedUid} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     // Email -> uid, keyed by the address so lookup is a get, not a query.
@@ -96,6 +104,23 @@ service cloud.firestore {
           return request.resource.data.diff(resource.data).affectedKeys();
         }
 
+        // The other half of the ID is the recipient.
+        function recipientUid() {
+          return conversationId.split('_')[0] == request.auth.uid
+                 ? conversationId.split('_')[1]
+                 : conversationId.split('_')[0];
+        }
+
+        // Blocking has to be enforced here rather than only hidden in the UI,
+        // or a blocked user could still write into the conversation directly.
+        // Costs one document read per message sent, which is the price of the
+        // block meaning anything at all.
+        function notBlockedByRecipient() {
+          return !exists(
+            /databases/$(database)/documents/users/$(recipientUid())/blocked/$(request.auth.uid)
+          );
+        }
+
         // Hiding a message for yourself. Touches deletedFor and nothing else,
         // and only ever adds your own uid — so one participant cannot un-hide,
         // hide on behalf of the other, or slip an edit through alongside.
@@ -128,7 +153,9 @@ service cloud.firestore {
 
         allow read: if inConversation();
         // Senders can only write as themselves.
-        allow create: if inConversation() && request.resource.data.senderId == request.auth.uid;
+        allow create: if inConversation()
+                      && request.resource.data.senderId == request.auth.uid
+                      && notBlockedByRecipient();
         // senderId and sentAt appear in neither branch's key list, so they can
         // never be rewritten.
         allow update: if inConversation() && (hidingForSelf() || withdrawingOwn());
