@@ -63,9 +63,12 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   }
 
   async function finishRecording() {
-    const recording = await recorder.stop();
-    if (recording) {
-      attachment.sendVoice(recording.uri, recording.durationMs);
+    const result = await recorder.stop();
+    if (result.status === 'recorded') {
+      attachment.sendVoice(result.uri, result.durationMs);
+    } else if (result.status === 'too-short') {
+      // Silence here is what made a quick tap look like a broken button.
+      setRecorderError(new Error('Hold the mic button to record a voice message.'));
     }
   }
 

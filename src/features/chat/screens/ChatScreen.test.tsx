@@ -99,8 +99,7 @@ describe('ChatScreen', () => {
       isRecording: false,
       elapsedMs: 0,
       start: jest.fn(),
-      stop: jest.fn(),
-      cancel: jest.fn(),
+      stop: jest.fn().mockResolvedValue({ status: 'idle' }),
     });
   });
 
