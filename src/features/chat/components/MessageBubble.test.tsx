@@ -15,6 +15,8 @@ function message(overrides: Partial<Message> = {}): Message {
     durationMs: null,
     latitude: null,
     longitude: null,
+    deletedFor: [],
+    deletedForEveryone: false,
     sentAt: 1_700_000_000_000,
     clientSentAt: 1_700_000_000_000,
     pending: false,
@@ -72,6 +74,35 @@ describe('MessageBubble', () => {
 
   it('shows no ticks on the other side messages', () => {
     renderBubble({}, false);
+
+    expect(screen.queryByLabelText('Sent')).toBeNull();
+  });
+});
+
+describe('MessageBubble deletion', () => {
+  it('shows a placeholder in place of a withdrawn message', () => {
+    renderBubble({ deletedForEveryone: true, text: '' });
+
+    expect(screen.getByText('This message was deleted')).toBeTruthy();
+  });
+
+  // The content is cleared server-side, but the client must not render media
+  // for a withdrawn message even if a stale copy still carries the URL.
+  it('does not render media for a withdrawn message', () => {
+    renderBubble({
+      type: 'image',
+      text: '',
+      mediaUrl: 'https://cdn/p.jpg',
+      deletedForEveryone: true,
+    });
+
+    expect(screen.queryByLabelText('Photo')).toBeNull();
+    expect(screen.getByText('This message was deleted')).toBeTruthy();
+  });
+
+  // Ticks on a tombstone would be claiming delivery of nothing.
+  it('shows no ticks on a withdrawn message', () => {
+    renderBubble({ deletedForEveryone: true, text: '' });
 
     expect(screen.queryByLabelText('Sent')).toBeNull();
   });

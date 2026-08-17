@@ -1,7 +1,7 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../shared/theme';
-import type { Message } from '../domain/message';
+import { DELETED_TEXT, type Message } from '../domain/message';
 import type { MessageStatus } from '../domain/messageStatus';
 import { LocationMessage } from './LocationMessage';
 import { MessageTicks } from './MessageTicks';
@@ -12,6 +12,7 @@ type Props = {
   message: Message;
   isMine: boolean;
   status: MessageStatus;
+  onLongPress?: () => void;
 };
 
 const IMAGE_WIDTH = 240;
@@ -24,14 +25,20 @@ function formatTime(millis: number): string {
   return new Date(millis).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export function MessageBubble({ message, isMine, status }: Props) {
+export function MessageBubble({ message, isMine, status, onLongPress }: Props) {
   const theme = useTheme();
-  const hasMedia = message.mediaUrl !== null;
+  // A withdrawn message keeps its bubble but loses its content, so both sides
+  // can see that something was removed.
+  const isDeleted = message.deletedForEveryone;
+  const hasMedia = message.mediaUrl !== null && !isDeleted;
   const isImage = message.type === 'image' && hasMedia;
   const isVideo = message.type === 'video' && hasMedia;
   const isVoice = message.type === 'voice' && hasMedia;
   const isLocation =
-    message.type === 'location' && message.latitude !== null && message.longitude !== null;
+    !isDeleted &&
+    message.type === 'location' &&
+    message.latitude !== null &&
+    message.longitude !== null;
   // Only image and video fill the bubble edge to edge; voice and location are
   // laid out like text and keep the padding.
   const isFramed = isImage || isVideo;
@@ -44,7 +51,11 @@ export function MessageBubble({ message, isMine, status }: Props) {
 
   return (
     <View style={[styles.row, isMine ? styles.rowMine : styles.rowTheirs]}>
-      <View
+      <Pressable
+        onLongPress={onLongPress}
+        // Long press only; a plain tap has to stay free for playing media.
+        delayLongPress={350}
+        disabled={!onLongPress}
         style={[
           styles.bubble,
           isMine ? styles.bubbleMine : styles.bubbleTheirs,
@@ -52,7 +63,11 @@ export function MessageBubble({ message, isMine, status }: Props) {
           { backgroundColor: isMine ? theme.colors.bubbleOutgoing : theme.colors.bubbleIncoming },
         ]}
       >
-        {isImage ? (
+        {isDeleted ? (
+          <Text style={[theme.typography.body, styles.deleted, { color: theme.colors.bubbleMeta }]}>
+            {DELETED_TEXT}
+          </Text>
+        ) : isImage ? (
           <Image
             source={{ uri: message.mediaUrl as string }}
             style={[styles.image, { width: IMAGE_WIDTH, height: mediaHeight }]}
@@ -91,13 +106,13 @@ export function MessageBubble({ message, isMine, status }: Props) {
           >
             {formatTime(message.sentAt ?? message.clientSentAt)}
           </Text>
-          {isMine ? (
+          {isMine && !isDeleted ? (
             <View style={styles.ticks}>
               <MessageTicks status={status} />
             </View>
           ) : null}
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -154,6 +169,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
     backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  deleted: {
+    fontStyle: 'italic',
   },
   time: {
     fontSize: 11,

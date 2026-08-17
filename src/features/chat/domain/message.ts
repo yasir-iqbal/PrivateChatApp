@@ -25,6 +25,12 @@ export type Message = {
   clientSentAt: number;
   // True while the write is still local — drives the "sending" indicator.
   pending: boolean;
+  // uids who have hidden this message for themselves.
+  deletedFor: string[];
+  // Withdrawn by its sender for both sides. The document survives as a
+  // tombstone so the other participant sees that something was removed
+  // rather than history silently changing under them.
+  deletedForEveryone: boolean;
 };
 
 export const MAX_MESSAGE_LENGTH = 4000;
@@ -42,8 +48,31 @@ export const PREVIEW_TEXT: Record<Exclude<MessageType, 'text'>, string> = {
   location: '📍 Location',
 };
 
-export function messagePreview(message: Pick<Message, 'type' | 'text'>): string {
+export const DELETED_TEXT = 'This message was deleted';
+
+export function messagePreview(
+  message: Pick<Message, 'type' | 'text' | 'deletedForEveryone'>,
+): string {
+  if (message.deletedForEveryone) return DELETED_TEXT;
   return message.type === 'text' ? message.text : PREVIEW_TEXT[message.type];
+}
+
+// How long a sender has to withdraw a message. Past this the recipient has
+// almost certainly read it, and silently rewriting their history is worse
+// than leaving it.
+export const DELETE_FOR_EVERYONE_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
+
+export function canDeleteForEveryone(
+  message: Pick<Message, 'senderId' | 'sentAt' | 'deletedForEveryone'>,
+  currentUid: string,
+  now: number = Date.now(),
+): boolean {
+  if (message.senderId !== currentUid) return false;
+  if (message.deletedForEveryone) return false;
+  // A message that has not reached the server yet has no trustworthy time to
+  // measure the window against.
+  if (message.sentAt === null) return false;
+  return now - message.sentAt <= DELETE_FOR_EVERYONE_WINDOW_MS;
 }
 
 export function formatDuration(millis: number): string {

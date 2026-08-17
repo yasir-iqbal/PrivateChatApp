@@ -28,6 +28,7 @@ import { MessageBubble } from '../components/MessageBubble';
 import type { Message } from '../domain/message';
 import { messageStatusFor } from '../domain/messageStatus';
 import { useConversationMeta } from '../hooks/useConversationMeta';
+import { useDeleteMessage } from '../hooks/useDeleteMessage';
 import { useMessages } from '../hooks/useMessages';
 import { useSendAttachment } from '../hooks/useSendAttachment';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
@@ -50,6 +51,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
   const { draft, setDraft, send, canSend, error: sendError } = useSendMessage(authUser.uid, contactUid);
   const presenceLabel = formatPresence(useContactPresence(contactUid));
   const attachment = useSendAttachment(authUser.uid, contactUid);
+  const deletion = useDeleteMessage(authUser.uid, contactUid);
   const recorder = useVoiceRecorder();
   const [recorderError, setRecorderError] = useState<Error | null>(null);
 
@@ -79,6 +81,7 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
         message={item}
         isMine={isMine}
         status={messageStatusFor(item, otherDeliveredAt, otherSeenAt)}
+        onLongPress={() => deletion.confirmDelete(item)}
       />
     );
   }
@@ -146,9 +149,9 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
           />
         )}
 
-        {sendError || attachment.error || recorderError ? (
+        {sendError || attachment.error || recorderError || deletion.error ? (
           <Text style={[theme.typography.caption, styles.sendError, { color: theme.colors.error }]}>
-            {(sendError ?? attachment.error ?? recorderError)?.message}
+            {(sendError ?? attachment.error ?? recorderError ?? deletion.error)?.message}
           </Text>
         ) : null}
 

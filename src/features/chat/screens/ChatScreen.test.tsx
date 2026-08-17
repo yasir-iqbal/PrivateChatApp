@@ -7,6 +7,7 @@ import type { AuthUser } from '../../auth/domain/authUser';
 import type { Message } from '../domain/message';
 import { useConversationMeta } from '../hooks/useConversationMeta';
 import { useSendAttachment } from '../hooks/useSendAttachment';
+import { useDeleteMessage } from '../hooks/useDeleteMessage';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { useMessages } from '../hooks/useMessages';
 import { useSendMessage } from '../hooks/useSendMessage';
@@ -16,12 +17,14 @@ jest.mock('../hooks/useSendMessage');
 jest.mock('../hooks/useConversationMeta');
 jest.mock('../hooks/useSendAttachment');
 jest.mock('../hooks/useVoiceRecorder');
+jest.mock('../hooks/useDeleteMessage');
 
 const mockUseMessages = useMessages as jest.MockedFunction<typeof useMessages>;
 const mockUseSendMessage = useSendMessage as jest.MockedFunction<typeof useSendMessage>;
 const mockUseConversationMeta = useConversationMeta as jest.MockedFunction<typeof useConversationMeta>;
 const mockUseSendAttachment = useSendAttachment as jest.MockedFunction<typeof useSendAttachment>;
 const mockUseVoiceRecorder = useVoiceRecorder as jest.MockedFunction<typeof useVoiceRecorder>;
+const mockUseDeleteMessage = useDeleteMessage as jest.MockedFunction<typeof useDeleteMessage>;
 
 const authUser: AuthUser = {
   uid: 'uid-me',
@@ -41,6 +44,8 @@ function msg(overrides: Partial<Message> = {}): Message {
     durationMs: null,
     latitude: null,
     longitude: null,
+    deletedFor: [],
+    deletedForEveryone: false,
     text: 'hello',
     sentAt: 1,
     clientSentAt: 1,
@@ -101,6 +106,7 @@ describe('ChatScreen', () => {
       start: jest.fn(),
       stop: jest.fn().mockResolvedValue({ status: 'idle' }),
     });
+    mockUseDeleteMessage.mockReturnValue({ confirmDelete: jest.fn(), error: null });
   });
 
   it('shows the contact name in the header', () => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { visibleTo } from '../domain/deleteMessage';
 import { observeMessages, toChronological } from '../domain/observeMessages';
 import type { Message } from '../domain/message';
 
@@ -23,7 +24,7 @@ export function useMessages(currentUid: string, otherUid: string): MessagesState
       currentUid,
       otherUid,
       (incoming) => {
-        setMessages(toChronological(incoming));
+        setMessages(visibleTo(toChronological(incoming), currentUid));
         setLoading(false);
       },
       (listenerError) => {

@@ -13,7 +13,7 @@ jest.mock('../domain/observeMessages', () => ({
 const mockObserveMessages = observeMessages as jest.MockedFunction<typeof observeMessages>;
 
 function message(id: string, clientSentAt: number): Message {
-  return { id, senderId: 'uid-a', type: 'text', mediaUrl: null, mediaAspectRatio: null, durationMs: null, latitude: null, longitude: null, text: id, sentAt: null, clientSentAt, pending: false };
+  return { id, senderId: 'uid-a', type: 'text', mediaUrl: null, mediaAspectRatio: null, durationMs: null, latitude: null, longitude: null, deletedFor: [], deletedForEveryone: false, text: id, sentAt: null, clientSentAt, pending: false };
 }
 
 describe('useMessages', () => {

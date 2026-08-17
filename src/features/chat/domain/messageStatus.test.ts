@@ -11,6 +11,8 @@ function message(overrides: Partial<Message> = {}): Message {
     durationMs: null,
     latitude: null,
     longitude: null,
+    deletedFor: [],
+    deletedForEveryone: false,
     text: 'hi',
     sentAt: 1000,
     clientSentAt: 1000,

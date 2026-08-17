@@ -38,6 +38,8 @@ export type ChatRepository = {
   ) => () => void;
   markDelivered: (conversationId: string, participants: string[], uid: string) => Promise<void>;
   markSeen: (conversationId: string, participants: string[], uid: string) => Promise<void>;
+  deleteMessageForMe: (conversationId: string, messageId: string, uid: string) => Promise<void>;
+  deleteMessageForEveryone: (conversationId: string, messageId: string) => Promise<void>;
   observeConversations: (
     uid: string,
     onChange: (conversations: ConversationRecord[]) => void,
@@ -155,6 +157,8 @@ export const firestoreChatRepository: ChatRepository = {
               sentAt: toMillis(data.sentAt),
               clientSentAt: typeof data.clientSentAt === 'number' ? data.clientSentAt : 0,
               pending: document.metadata?.hasPendingWrites ?? false,
+              deletedFor: Array.isArray(data.deletedFor) ? (data.deletedFor as string[]) : [],
+              deletedForEveryone: data.deletedForEveryone === true,
             };
           }),
         );
@@ -203,6 +207,33 @@ export const firestoreChatRepository: ChatRepository = {
         seenAt: { [uid]: firestore.serverTimestamp() },
       },
       { merge: true },
+    );
+  },
+
+  async deleteMessageForMe(conversationId, messageId, uid) {
+    const db = firestore.getFirestore();
+    await firestore.updateDoc(
+      firestore.doc(db, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION, messageId),
+      // arrayUnion rather than a read-then-write: both participants can be
+      // hiding the same message at once and neither should erase the other.
+      { deletedFor: firestore.arrayUnion(uid) },
+    );
+  },
+
+  async deleteMessageForEveryone(conversationId, messageId) {
+    const db = firestore.getFirestore();
+    // The text and any media reference are cleared as well as the flag, so the
+    // content is genuinely gone rather than merely hidden by the client.
+    await firestore.updateDoc(
+      firestore.doc(db, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION, messageId),
+      {
+        deletedForEveryone: true,
+        text: '',
+        mediaUrl: firestore.deleteField(),
+        durationMs: firestore.deleteField(),
+        latitude: firestore.deleteField(),
+        longitude: firestore.deleteField(),
+      },
     );
   },
 
