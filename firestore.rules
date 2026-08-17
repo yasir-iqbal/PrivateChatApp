@@ -92,11 +92,49 @@ service cloud.firestore {
           return isSignedIn() && request.auth.uid in conversationId.split('_');
         }
 
+        // Only the deletion fields may ever change, and the author and send
+        // time can never be rewritten. Deleting is the one exception to a sent
+        // message being fixed, not a general edit.
+        function onlyChangesDeletion() {
+          return request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['deletedFor', 'deletedForEveryone', 'text', 'mediaUrl',
+                             'durationMs', 'latitude', 'longitude'])
+                 && request.resource.data.senderId == resource.data.senderId
+                 && request.resource.data.sentAt == resource.data.sentAt;
+        }
+
+        // Hiding a message for yourself only ever adds your own uid, so one
+        // participant cannot un-hide, or hide on behalf of the other.
+        //
+        // Read with defaults because messages written before deletion existed
+        // carry neither field, and a missing field is an error in rules rather
+        // than a null — without this, those messages could never be hidden.
+        function hidingForSelf() {
+          let before = resource.data.get('deletedFor', []);
+          let after = request.resource.data.get('deletedFor', []);
+          return after.hasAll(before)
+                 && after.hasOnly(before.concat([request.auth.uid]))
+                 && request.resource.data.get('deletedForEveryone', false)
+                    == resource.data.get('deletedForEveryone', false);
+        }
+
+        // Withdrawing for both sides is the sender's alone, and clears the
+        // content rather than merely flagging it.
+        function withdrawingOwn() {
+          return resource.data.senderId == request.auth.uid
+                 && request.resource.data.get('deletedForEveryone', false) == true
+                 && request.resource.data.text == '';
+        }
+
         allow read: if inConversation();
-        // Senders can only write as themselves, and messages are immutable —
-        // no edit or delete, so neither side can rewrite what was said.
+        // Senders can only write as themselves.
         allow create: if inConversation() && request.resource.data.senderId == request.auth.uid;
-        allow update, delete: if false;
+        allow update: if inConversation()
+                      && onlyChangesDeletion()
+                      && (hidingForSelf() || withdrawingOwn());
+        // Never hard deleted: the tombstone is what tells the other side that
+        // something was removed.
+        allow delete: if false;
       }
     }
   }
