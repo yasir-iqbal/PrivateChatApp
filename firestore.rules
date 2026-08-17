@@ -92,36 +92,36 @@ service cloud.firestore {
           return isSignedIn() && request.auth.uid in conversationId.split('_');
         }
 
-        // Only the deletion fields may ever change, and the author and send
-        // time can never be rewritten. Deleting is the one exception to a sent
-        // message being fixed, not a general edit.
-        function onlyChangesDeletion() {
-          return request.resource.data.diff(resource.data).affectedKeys()
-                   .hasOnly(['deletedFor', 'deletedForEveryone', 'text', 'mediaUrl',
-                             'durationMs', 'latitude', 'longitude'])
-                 && request.resource.data.senderId == resource.data.senderId
-                 && request.resource.data.sentAt == resource.data.sentAt;
+        function changedKeys() {
+          return request.resource.data.diff(resource.data).affectedKeys();
         }
 
-        // Hiding a message for yourself only ever adds your own uid, so one
-        // participant cannot un-hide, or hide on behalf of the other.
+        // Hiding a message for yourself. Touches deletedFor and nothing else,
+        // and only ever adds your own uid — so one participant cannot un-hide,
+        // hide on behalf of the other, or slip an edit through alongside.
         //
         // Read with defaults because messages written before deletion existed
         // carry neither field, and a missing field is an error in rules rather
-        // than a null — without this, those messages could never be hidden.
+        // than a null; without that, those messages could never be hidden.
+        // The uid must actually end up present, or a write changing nothing
+        // about deletion would satisfy every other condition vacuously.
         function hidingForSelf() {
           let before = resource.data.get('deletedFor', []);
           let after = request.resource.data.get('deletedFor', []);
-          return after.hasAll(before)
+          return changedKeys().hasOnly(['deletedFor'])
+                 && after.hasAll(before)
                  && after.hasOnly(before.concat([request.auth.uid]))
-                 && request.resource.data.get('deletedForEveryone', false)
-                    == resource.data.get('deletedForEveryone', false);
+                 && after.hasAny([request.auth.uid]);
         }
 
-        // Withdrawing for both sides is the sender's alone, and clears the
-        // content rather than merely flagging it.
+        // Withdrawing for both sides is the sender's alone. This is the only
+        // path allowed to clear content, and it must genuinely set the flag —
+        // which is what stops it being used as cover for editing text.
         function withdrawingOwn() {
           return resource.data.senderId == request.auth.uid
+                 && changedKeys().hasOnly(['deletedForEveryone', 'text', 'mediaUrl',
+                                           'durationMs', 'latitude', 'longitude'])
+                 && resource.data.get('deletedForEveryone', false) == false
                  && request.resource.data.get('deletedForEveryone', false) == true
                  && request.resource.data.text == '';
         }
@@ -129,9 +129,9 @@ service cloud.firestore {
         allow read: if inConversation();
         // Senders can only write as themselves.
         allow create: if inConversation() && request.resource.data.senderId == request.auth.uid;
-        allow update: if inConversation()
-                      && onlyChangesDeletion()
-                      && (hidingForSelf() || withdrawingOwn());
+        // senderId and sentAt appear in neither branch's key list, so they can
+        // never be rewritten.
+        allow update: if inConversation() && (hidingForSelf() || withdrawingOwn());
         // Never hard deleted: the tombstone is what tells the other side that
         // something was removed.
         allow delete: if false;
