@@ -13,6 +13,7 @@ function message(overrides: Partial<Message> = {}): Message {
     durationMs: null,
     latitude: null,
     longitude: null,
+    address: null,
     sentAt: 1,
     clientSentAt: 1,
     pending: false,

@@ -87,19 +87,24 @@ export async function sendVoiceMessage(
   });
 }
 
+// Takes the point the sender chose rather than reading GPS itself: the picker
+// lets them move the pin, so the current position is only the starting point.
 export async function sendLocationMessage(
   senderUid: string,
   recipientUid: string,
-  { mediaRepo = nativeChatMediaRepository, repo = firestoreChatRepository }: Deps = {},
+  latitude: number,
+  longitude: number,
+  address: string | null,
+  { repo = firestoreChatRepository }: Deps = {},
 ): Promise<void> {
   const { conversationId, participants } = participantsFor(senderUid, recipientUid);
-  const position = await mediaRepo.getCurrentPosition();
 
   await repo.sendMessage(conversationId, participants, senderUid, {
     type: 'location',
     text: '',
-    latitude: position.latitude,
-    longitude: position.longitude,
+    latitude,
+    longitude,
+    ...(address ? { address } : {}),
     preview: PREVIEW_TEXT.location,
   });
 }

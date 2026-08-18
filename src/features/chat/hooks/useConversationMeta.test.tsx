@@ -11,7 +11,7 @@ const mockObserve = observeConversationMeta as jest.MockedFunction<typeof observ
 const mockMarkSeen = markSeen as jest.MockedFunction<typeof markSeen>;
 
 function message(senderId: string, clientSentAt: number): Message {
-  return { id: `m${clientSentAt}`, senderId, type: 'text', mediaUrl: null, mediaAspectRatio: null, durationMs: null, latitude: null, longitude: null, deletedFor: [], deletedForEveryone: false, text: 'x', sentAt: clientSentAt, clientSentAt, pending: false };
+  return { id: `m${clientSentAt}`, senderId, type: 'text', mediaUrl: null, mediaAspectRatio: null, durationMs: null, latitude: null, longitude: null, address: null, deletedFor: [], deletedForEveryone: false, text: 'x', sentAt: clientSentAt, clientSentAt, pending: false };
 }
 
 describe('useConversationMeta', () => {

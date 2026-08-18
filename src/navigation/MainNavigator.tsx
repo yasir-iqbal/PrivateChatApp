@@ -5,6 +5,7 @@ import type { User } from '@react-native-firebase/auth';
 import type { AuthUser } from '../features/auth/domain/authUser';
 import { ChatScreen } from '../features/chat/screens/ChatScreen';
 import { ChatsScreen } from '../features/chat/screens/ChatsScreen';
+import { LocationPickerScreen } from '../features/chat/screens/LocationPickerScreen';
 import { AddContactScreen } from '../features/contacts/screens/AddContactScreen';
 import { ContactsScreen } from '../features/contacts/screens/ContactsScreen';
 import { ContactDetailScreen } from '../features/contacts/screens/ContactDetailScreen';
@@ -50,6 +51,9 @@ export function MainNavigator({ authUser, firebaseUser, refreshAuthState }: Prop
       </Stack.Screen>
       <Stack.Screen name="Chat">
         {(props) => <ChatScreen {...props} authUser={authUser} />}
+      </Stack.Screen>
+      <Stack.Screen name="LocationPicker">
+        {(props) => <LocationPickerScreen {...props} authUser={authUser} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

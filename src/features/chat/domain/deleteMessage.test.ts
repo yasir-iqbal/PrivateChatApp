@@ -27,6 +27,7 @@ function message(overrides: Partial<Message> = {}): Message {
     durationMs: null,
     latitude: null,
     longitude: null,
+    address: null,
     sentAt: Date.now(),
     clientSentAt: Date.now(),
     pending: false,

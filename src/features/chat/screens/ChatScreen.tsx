@@ -258,7 +258,15 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
       <AttachmentSheet
         visible={attachment.isSheetOpen}
         onClose={attachment.closeSheet}
-        onChoose={attachment.choose}
+        onChoose={(choice) => {
+          // Location is a screen, not an immediate send: the picker lets the
+          // sender see and move the point before it goes.
+          if (choice.kind === 'location') {
+            navigation.navigate('LocationPicker', { contactUid });
+            return;
+          }
+          attachment.choose(choice);
+        }}
       />
     </View>
   );

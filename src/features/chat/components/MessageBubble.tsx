@@ -95,6 +95,7 @@ export function MessageBubble({ message, isMine, status, onLongPress }: Props) {
           <LocationMessage
             latitude={message.latitude as number}
             longitude={message.longitude as number}
+            address={message.address}
             tint={tint}
           />
         ) : (

@@ -6,6 +6,9 @@ import { useTheme } from '../../../shared/theme';
 type Props = {
   latitude: number;
   longitude: number;
+  // What the sender saw when they picked the spot. Absent on messages sent
+  // before the picker existed, and when the geocoder had nothing.
+  address: string | null;
   tint: string;
 };
 
@@ -30,7 +33,7 @@ export async function openLocation(latitude: number, longitude: number): Promise
 // Presentational only. The press is handled by the bubble that wraps it:
 // a Pressable inside the bubble's own Pressable competes for the touch
 // responder on Android, and the inner one frequently never fires.
-export function LocationMessage({ latitude, longitude, tint }: Props) {
+export function LocationMessage({ latitude, longitude, address, tint }: Props) {
   const theme = useTheme();
 
   return (
@@ -40,8 +43,8 @@ export function LocationMessage({ latitude, longitude, tint }: Props) {
       </View>
       <View style={styles.text}>
         <Text style={[styles.title, { color: tint }]}>Location</Text>
-        <Text style={[styles.coords, { color: tint }]} numberOfLines={1}>
-          {latitude.toFixed(5)}, {longitude.toFixed(5)}
+        <Text style={[styles.coords, { color: tint }]} numberOfLines={2}>
+          {address ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
         </Text>
         <Text style={[styles.hint, { color: tint }]}>Tap to open in Maps</Text>
       </View>

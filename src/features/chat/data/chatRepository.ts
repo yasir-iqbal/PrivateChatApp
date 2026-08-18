@@ -56,6 +56,7 @@ export type OutgoingMessage = {
   durationMs?: number;
   latitude?: number;
   longitude?: number;
+  address?: string;
   // What the conversation's lastMessageText should read, which is not the
   // message text for a photo.
   preview: string;
@@ -96,6 +97,7 @@ function toMessage(document: MessageDoc): Message {
     durationMs: typeof data.durationMs === 'number' ? data.durationMs : null,
     latitude: typeof data.latitude === 'number' ? data.latitude : null,
     longitude: typeof data.longitude === 'number' ? data.longitude : null,
+    address: typeof data.address === 'string' ? data.address : null,
     sentAt: toMillis(data.sentAt),
     clientSentAt: typeof data.clientSentAt === 'number' ? data.clientSentAt : 0,
     pending: document.metadata?.hasPendingWrites ?? false,
@@ -147,6 +149,7 @@ export const firestoreChatRepository: ChatRepository = {
       ...(message.durationMs !== undefined ? { durationMs: message.durationMs } : {}),
       ...(message.latitude !== undefined ? { latitude: message.latitude } : {}),
       ...(message.longitude !== undefined ? { longitude: message.longitude } : {}),
+      ...(message.address ? { address: message.address } : {}),
       sentAt: firestore.serverTimestamp(),
       clientSentAt,
     });

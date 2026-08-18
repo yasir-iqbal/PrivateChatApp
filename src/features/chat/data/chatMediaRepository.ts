@@ -38,6 +38,9 @@ export type ChatMediaRepository = {
   uploadVideo: (conversationId: string, localUri: string) => Promise<string>;
   uploadVoice: (conversationId: string, localUri: string) => Promise<string>;
   getCurrentPosition: () => Promise<Coordinates>;
+  // Street address for a point, via the phone's own geocoder — no API key and
+  // no third party sees the coordinates.
+  describePosition: (position: Coordinates) => Promise<string | null>;
   requestMicrophoneAccess: () => Promise<boolean>;
 };
 
@@ -144,6 +147,24 @@ export const nativeChatMediaRepository: ChatMediaRepository = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
     };
+  },
+
+  async describePosition({ latitude, longitude }) {
+    try {
+      const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
+      if (!place) return null;
+      // Assembled loosely because which fields are populated varies by country
+      // and by how precise the fix is.
+      const parts = [place.name, place.street, place.city, place.region].filter(
+        (part): part is string => typeof part === 'string' && part.length > 0,
+      );
+      // name often repeats street; keep the address readable rather than exact.
+      const unique = parts.filter((part, index) => parts.indexOf(part) === index);
+      return unique.length > 0 ? unique.join(', ') : null;
+    } catch {
+      // An address is a nicety; failing to resolve one must not block sending.
+      return null;
+    }
   },
 
   async requestMicrophoneAccess() {

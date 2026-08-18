@@ -23,7 +23,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDZewnAclncGde2daB4suMD5hAvVcnLGXQ"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

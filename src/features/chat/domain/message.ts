@@ -15,9 +15,11 @@ export type Message = {
   // Length of a voice note or video, so the bubble can show it before the
   // file is fetched.
   durationMs: number | null;
-  // Location messages only.
+  // Location messages only. The address is what the sender saw when they
+  // picked the spot, resolved on their device.
   latitude: number | null;
   longitude: number | null;
+  address: string | null;
   // Server time, authoritative but null until the write reaches the server.
   sentAt: number | null;
   // Client time, set immediately. Used for ordering so a just-sent message

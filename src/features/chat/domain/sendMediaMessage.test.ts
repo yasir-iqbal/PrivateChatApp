@@ -19,6 +19,7 @@ function fakeMediaRepo(
     uploadVideo: jest.fn().mockResolvedValue('https://cdn/clip.mp4'),
     uploadVoice: jest.fn().mockResolvedValue('https://cdn/voice.m4a'),
     getCurrentPosition: jest.fn().mockResolvedValue({ latitude: 51.5, longitude: -0.12 }),
+    describePosition: jest.fn().mockResolvedValue('1 Example Street, London'),
     requestMicrophoneAccess: jest.fn().mockResolvedValue(true),
   };
 }
@@ -192,30 +193,38 @@ describe('sendVoiceMessage', () => {
 });
 
 describe('sendLocationMessage', () => {
-  it('writes the current coordinates', async () => {
-    const media = fakeMediaRepo();
+  it('writes the point the sender chose, with its address', async () => {
     const chat = fakeChatRepo();
 
-    await sendLocationMessage('uid-a', 'uid-b', { mediaRepo: media, repo: chat });
+    await sendLocationMessage('uid-a', 'uid-b', 51.5, -0.12, '1 Example Street', { repo: chat });
 
     expect(chat.sendMessage.mock.calls[0][3]).toMatchObject({
       type: 'location',
       latitude: 51.5,
       longitude: -0.12,
+      address: '1 Example Street',
       preview: PREVIEW_TEXT.location,
     });
   });
 
-  // Nothing is uploaded for a location, so a refused permission must surface
-  // rather than writing a message with no coordinates.
-  it('writes nothing when the location cannot be read', async () => {
+  // The picker lets the pin be moved, so the domain must not quietly read GPS
+  // and send somewhere other than what the sender confirmed.
+  it('does not read the current position itself', async () => {
     const media = fakeMediaRepo();
-    media.getCurrentPosition.mockRejectedValue(new Error('Location permission was not granted.'));
     const chat = fakeChatRepo();
 
-    await expect(
-      sendLocationMessage('uid-a', 'uid-b', { mediaRepo: media, repo: chat }),
-    ).rejects.toThrow('Location permission was not granted.');
-    expect(chat.sendMessage).not.toHaveBeenCalled();
+    await sendLocationMessage('uid-a', 'uid-b', 10, 20, null, { mediaRepo: media, repo: chat });
+
+    expect(media.getCurrentPosition).not.toHaveBeenCalled();
+    expect(chat.sendMessage.mock.calls[0][3]).toMatchObject({ latitude: 10, longitude: 20 });
+  });
+
+  // An address is a nicety; a point without one still has to send.
+  it('omits the address when there is none', async () => {
+    const chat = fakeChatRepo();
+
+    await sendLocationMessage('uid-a', 'uid-b', 51.5, -0.12, null, { repo: chat });
+
+    expect(chat.sendMessage.mock.calls[0][3]).not.toHaveProperty('address');
   });
 });

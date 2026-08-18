@@ -11,4 +11,5 @@ export type MainStackParamList = {
     contactPhotoURL?: string | null;
   };
   Chat: { contactUid: string; contactName: string; contactPhotoURL?: string | null };
+  LocationPicker: { contactUid: string };
 };
