@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 
 import { ScreenContainer } from '../../../shared/components';
@@ -9,6 +9,8 @@ import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
 import { describeLocation, readCurrentLocation, type PickedLocation } from '../domain/pickLocation';
+import type { NearbyPlace } from '../domain/nearbyPlaces';
+import { useNearbyPlaces } from '../hooks/useNearbyPlaces';
 import { useSendAttachment } from '../hooks/useSendAttachment';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LocationPicker'> & {
@@ -26,6 +28,10 @@ export function LocationPickerScreen({ navigation, route, authUser }: Props) {
   const [region, setRegion] = useState<Region | null>(null);
   const [picked, setPicked] = useState<PickedLocation | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  // Empty unless a Places key is configured; the picker works either way.
+  const nearby = useNearbyPlaces(
+    picked ? { latitude: picked.latitude, longitude: picked.longitude } : null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +68,13 @@ export function LocationPickerScreen({ navigation, route, authUser }: Props) {
   function send() {
     if (!picked) return;
     attachment.sendLocation(picked.latitude, picked.longitude, picked.address);
+    navigation.goBack();
+  }
+
+  // Sends the place itself rather than moving the pin to it: choosing a place
+  // from the list is a decision, not a nudge of the map.
+  function sendPlace(place: NearbyPlace) {
+    attachment.sendLocation(place.latitude, place.longitude, place.address ?? place.name);
     navigation.goBack();
   }
 
@@ -141,6 +154,36 @@ export function LocationPickerScreen({ navigation, route, authUser }: Props) {
               </Text>
             </View>
           </Pressable>
+
+          {nearby.data && nearby.data.length > 0 ? (
+            <FlatList
+              style={styles.places}
+              data={nearby.data}
+              keyExtractor={(place) => place.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[styles.placeRow, { borderTopColor: theme.colors.divider }]}
+                  onPress={() => sendPlace(item)}
+                  accessibilityLabel={`Send ${item.name}`}
+                >
+                  <Ionicons name="business-outline" size={20} color={theme.colors.icon} />
+                  <View style={styles.placeText}>
+                    <Text style={[theme.typography.body, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    {item.address ? (
+                      <Text
+                        style={[theme.typography.caption, { color: theme.colors.textSecondary }]}
+                        numberOfLines={1}
+                      >
+                        {item.address}
+                      </Text>
+                    ) : null}
+                  </View>
+                </Pressable>
+              )}
+            />
+          ) : null}
         </>
       )}
     </ScreenContainer>
@@ -181,6 +224,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  places: {
+    maxHeight: 220,
+  },
+  placeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  placeText: {
     flex: 1,
     marginLeft: 12,
   },
