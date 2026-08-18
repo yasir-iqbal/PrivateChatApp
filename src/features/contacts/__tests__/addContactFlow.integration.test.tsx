@@ -42,7 +42,11 @@ describe('add contact flow', () => {
         <QueryWrapper>
           <ThemeProvider>
             <NavigationContainer>
-              <MainNavigator authUser={authUser} />
+              <MainNavigator
+                authUser={authUser}
+                firebaseUser={{ uid: authUser.uid } as never}
+                refreshAuthState={jest.fn()}
+              />
             </NavigationContainer>
           </ThemeProvider>
         </QueryWrapper>

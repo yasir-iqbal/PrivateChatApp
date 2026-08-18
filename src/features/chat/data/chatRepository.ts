@@ -38,6 +38,7 @@ export type ChatRepository = {
   ) => () => void;
   markDelivered: (conversationId: string, participants: string[], uid: string) => Promise<void>;
   markSeen: (conversationId: string, participants: string[], uid: string) => Promise<void>;
+  listRecentMessages: (conversationId: string, limit: number) => Promise<Message[]>;
   deleteMessageForMe: (conversationId: string, messageId: string, uid: string) => Promise<void>;
   deleteMessageForEveryone: (conversationId: string, messageId: string) => Promise<void>;
   observeConversations: (
@@ -75,6 +76,32 @@ function toMillis(value: unknown): number | null {
     return (value as { toMillis: () => number }).toMillis();
   }
   return null;
+}
+
+type MessageDoc = {
+  id: string;
+  data: () => Record<string, unknown> | undefined;
+  metadata?: { hasPendingWrites?: boolean };
+};
+
+function toMessage(document: MessageDoc): Message {
+  const data = document.data() ?? {};
+  return {
+    id: document.id,
+    senderId: typeof data.senderId === 'string' ? data.senderId : '',
+    type: MESSAGE_TYPES.includes(data.type as MessageType) ? (data.type as MessageType) : 'text',
+    text: typeof data.text === 'string' ? data.text : '',
+    mediaUrl: typeof data.mediaUrl === 'string' ? data.mediaUrl : null,
+    mediaAspectRatio: typeof data.mediaAspectRatio === 'number' ? data.mediaAspectRatio : null,
+    durationMs: typeof data.durationMs === 'number' ? data.durationMs : null,
+    latitude: typeof data.latitude === 'number' ? data.latitude : null,
+    longitude: typeof data.longitude === 'number' ? data.longitude : null,
+    sentAt: toMillis(data.sentAt),
+    clientSentAt: typeof data.clientSentAt === 'number' ? data.clientSentAt : 0,
+    pending: document.metadata?.hasPendingWrites ?? false,
+    deletedFor: Array.isArray(data.deletedFor) ? (data.deletedFor as string[]) : [],
+    deletedForEveryone: data.deletedForEveryone === true,
+  };
 }
 
 function toMillisMap(value: unknown): Record<string, number> {
@@ -137,32 +164,7 @@ export const firestoreChatRepository: ChatRepository = {
         firestore.orderBy('clientSentAt', 'desc'),
         firestore.limit(MESSAGE_PAGE_SIZE),
       ),
-      (snapshot) => {
-        onChange(
-          snapshot.docs.map((document) => {
-            const data = document.data() ?? {};
-            return {
-              id: document.id,
-              senderId: typeof data.senderId === 'string' ? data.senderId : '',
-              type: MESSAGE_TYPES.includes(data.type as MessageType)
-                ? (data.type as MessageType)
-                : 'text',
-              text: typeof data.text === 'string' ? data.text : '',
-              mediaUrl: typeof data.mediaUrl === 'string' ? data.mediaUrl : null,
-              mediaAspectRatio:
-                typeof data.mediaAspectRatio === 'number' ? data.mediaAspectRatio : null,
-              durationMs: typeof data.durationMs === 'number' ? data.durationMs : null,
-              latitude: typeof data.latitude === 'number' ? data.latitude : null,
-              longitude: typeof data.longitude === 'number' ? data.longitude : null,
-              sentAt: toMillis(data.sentAt),
-              clientSentAt: typeof data.clientSentAt === 'number' ? data.clientSentAt : 0,
-              pending: document.metadata?.hasPendingWrites ?? false,
-              deletedFor: Array.isArray(data.deletedFor) ? (data.deletedFor as string[]) : [],
-              deletedForEveryone: data.deletedForEveryone === true,
-            };
-          }),
-        );
-      },
+      (snapshot) => onChange(snapshot.docs.map(toMessage)),
       onError,
     );
   },
@@ -208,6 +210,21 @@ export const firestoreChatRepository: ChatRepository = {
       },
       { merge: true },
     );
+  },
+
+  async listRecentMessages(conversationId, limit) {
+    const db = firestore.getFirestore();
+    // Ordered and limited, then filtered by the caller. Filtering by type in
+    // the query would need a composite index alongside the ordering, and the
+    // gallery is not worth an index deployment step.
+    const snapshot = await firestore.getDocs(
+      firestore.query(
+        firestore.collection(db, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION),
+        firestore.orderBy('clientSentAt', 'desc'),
+        firestore.limit(limit),
+      ),
+    );
+    return snapshot.docs.map(toMessage);
   },
 
   async deleteMessageForMe(conversationId, messageId, uid) {

@@ -82,7 +82,13 @@ export function RootNavigator() {
             )}
           </Stack.Screen>
         ) : (
-          <Stack.Screen name="Main">{() => <MainNavigator authUser={authUser} />}</Stack.Screen>
+          <Stack.Screen name="Main">{() => (
+              <MainNavigator
+                authUser={authUser}
+                firebaseUser={firebaseUser!}
+                refreshAuthState={refresh}
+              />
+            )}</Stack.Screen>
         )}
       </Stack.Navigator>
     </NavigationContainer>

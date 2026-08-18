@@ -99,10 +99,20 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
         <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
         </Pressable>
-        <View style={styles.headerAvatar}>
+        <Pressable
+          style={styles.headerIdentity}
+          onPress={() =>
+            navigation.navigate('ContactDetail', {
+              contactUid,
+              contactName,
+              contactEmail: '',
+              contactPhotoURL,
+            })
+          }
+          accessibilityLabel={`About ${contactName}`}
+        >
           <ContactAvatar name={contactName} photoURL={contactPhotoURL ?? null} size={38} />
-        </View>
-        <View style={styles.headerText}>
+          <View style={styles.headerText}>
           <Text
             style={[theme.typography.body, styles.headerName, { color: theme.colors.textPrimary }]}
             numberOfLines={1}
@@ -116,8 +126,9 @@ export function ChatScreen({ navigation, route, authUser }: Props) {
             >
               {presenceLabel}
             </Text>
-          ) : null}
-        </View>
+            ) : null}
+          </View>
+        </Pressable>
         <Pressable
           onPress={() => block.toggle(contactName)}
           hitSlop={8}
@@ -262,7 +273,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerAvatar: {
+  headerIdentity: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     marginLeft: 12,
   },
   headerText: {

@@ -5,7 +5,6 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { ScreenContainer } from '../../../shared/components';
 import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
-import { useSignOut } from '../../auth/hooks/useSignOut';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
 import { useConversations, type ConversationRow } from '../hooks/useConversations';
@@ -39,7 +38,6 @@ export function ChatsScreen({ navigation, authUser }: Props) {
   // The list is open whenever the app is, which is what lets delivery be
   // reported before the recipient opens the conversation.
   useDeliveryReporter(authUser.uid, conversations);
-  const signOut = useSignOut();
 
   function renderRow({ item }: { item: ConversationRow }) {
     const name = rowName(item);
@@ -92,12 +90,12 @@ export function ChatsScreen({ navigation, authUser }: Props) {
             <Ionicons name="people-outline" size={22} color={theme.colors.primary} />
           </Pressable>
           <Pressable
-            onPress={() => signOut.mutate()}
+            onPress={() => navigation.navigate('Settings')}
             hitSlop={8}
-            accessibilityLabel="Sign out"
+            accessibilityLabel="Settings"
             style={{ marginLeft: theme.spacing.md }}
           >
-            <Ionicons name="log-out-outline" size={22} color={theme.colors.textSecondary} />
+            <Ionicons name="settings-outline" size={22} color={theme.colors.textSecondary} />
           </Pressable>
         </View>
       </View>

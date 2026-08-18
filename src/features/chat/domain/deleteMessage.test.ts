@@ -9,6 +9,7 @@ function fakeRepo(): jest.Mocked<ChatRepository> {
     observeConversationMeta: jest.fn(),
     markDelivered: jest.fn(),
     markSeen: jest.fn(),
+    listRecentMessages: jest.fn(),
     deleteMessageForMe: jest.fn().mockResolvedValue(undefined),
     deleteMessageForEveryone: jest.fn().mockResolvedValue(undefined),
     observeConversations: jest.fn(),
