@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../../shared/theme';
 import { DELETED_TEXT, type Message } from '../domain/message';
 import type { MessageStatus } from '../domain/messageStatus';
-import { LocationMessage } from './LocationMessage';
+import { LocationMessage, openLocation } from './LocationMessage';
 import { MessageTicks } from './MessageTicks';
 import { VideoMessage } from './VideoMessage';
 import { VoiceMessage } from './VoiceMessage';
@@ -48,14 +48,22 @@ export function MessageBubble({ message, isMine, status, onLongPress }: Props) {
   );
   const mediaHeight = IMAGE_WIDTH / aspectRatio;
   const tint = isMine ? theme.colors.bubbleOutgoingText : theme.colors.bubbleIncomingText;
+  // Tapping is owned by the bubble rather than the content, so there is only
+  // ever one pressable competing for the touch.
+  const handlePress = isLocation
+    ? () => openLocation(message.latitude as number, message.longitude as number)
+    : undefined;
 
   return (
     <View style={[styles.row, isMine ? styles.rowMine : styles.rowTheirs]}>
       <Pressable
+        onPress={handlePress}
         onLongPress={onLongPress}
-        // Long press only; a plain tap has to stay free for playing media.
         delayLongPress={350}
-        disabled={!onLongPress}
+        // Still pressable when only a long press is wired, so delete keeps
+        // working on message kinds that have nothing to tap.
+        disabled={!onLongPress && !handlePress}
+        accessibilityLabel={isLocation ? 'Open location in maps' : undefined}
         style={[
           styles.bubble,
           isMine ? styles.bubbleMine : styles.bubbleTheirs,

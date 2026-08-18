@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../shared/theme';
 
@@ -9,22 +9,32 @@ type Props = {
   tint: string;
 };
 
-// A geo: URI hands off to whatever map app the user actually has, rather than
-// embedding a map — which would mean a Maps SDK, an API key and billing for
-// something that is one tap away already.
+// Hands off to whatever map app the user has rather than embedding a map,
+// which would mean a Maps SDK, an API key and billing for something that is
+// one tap away already.
 export function mapUrlFor(latitude: number, longitude: number): string {
   return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
 }
 
+export async function openLocation(latitude: number, longitude: number): Promise<void> {
+  // openURL rejects when nothing can handle the link — an emulator with no
+  // maps app, for instance. Swallowed so a tap is never an unhandled
+  // rejection, which is how this failed silently before.
+  try {
+    await Linking.openURL(mapUrlFor(latitude, longitude));
+  } catch (error) {
+    console.warn('Could not open the location', error);
+  }
+}
+
+// Presentational only. The press is handled by the bubble that wraps it:
+// a Pressable inside the bubble's own Pressable competes for the touch
+// responder on Android, and the inner one frequently never fires.
 export function LocationMessage({ latitude, longitude, tint }: Props) {
   const theme = useTheme();
 
   return (
-    <Pressable
-      onPress={() => Linking.openURL(mapUrlFor(latitude, longitude))}
-      accessibilityLabel="Open location in maps"
-      style={styles.row}
-    >
+    <View style={styles.row}>
       <View style={[styles.pin, { backgroundColor: theme.colors.surfaceVariant }]}>
         <Ionicons name="location" size={22} color={theme.colors.error} />
       </View>
@@ -33,8 +43,9 @@ export function LocationMessage({ latitude, longitude, tint }: Props) {
         <Text style={[styles.coords, { color: tint }]} numberOfLines={1}>
           {latitude.toFixed(5)}, {longitude.toFixed(5)}
         </Text>
+        <Text style={[styles.hint, { color: tint }]}>Tap to open in Maps</Text>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -42,7 +53,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 180,
+    minWidth: 190,
   },
   pin: {
     width: 44,
@@ -62,5 +73,10 @@ const styles = StyleSheet.create({
   coords: {
     fontSize: 12,
     opacity: 0.8,
+  },
+  hint: {
+    fontSize: 11,
+    opacity: 0.6,
+    marginTop: 1,
   },
 });

@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 
 import { MessageBubble } from './MessageBubble';
 import { ThemeProvider } from '../../../shared/theme';
@@ -105,5 +106,51 @@ describe('MessageBubble deletion', () => {
     renderBubble({ deletedForEveryone: true, text: '' });
 
     expect(screen.queryByLabelText('Sent')).toBeNull();
+  });
+});
+
+describe('MessageBubble location tap', () => {
+  // The regression this guards: LocationMessage had its own Pressable nested
+  // inside the bubble's, and on Android the outer one swallowed the tap.
+  it('opens maps from a single pressable on the bubble', () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
+
+    renderBubble({ type: 'location', text: '', latitude: 51.5, longitude: -0.12 });
+    fireEvent.press(screen.getByLabelText('Open location in maps'));
+
+    expect(openURL).toHaveBeenCalledWith(expect.stringContaining('51.5,-0.12'));
+    openURL.mockRestore();
+  });
+
+  // A device with no maps app rejects openURL; that must not surface as an
+  // unhandled rejection, which is how it failed silently.
+  it('survives a device that cannot open the link', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('no handler'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderBubble({ type: 'location', text: '', latitude: 51.5, longitude: -0.12 });
+    fireEvent.press(screen.getByLabelText('Open location in maps'));
+
+    await waitFor(() => expect(warn).toHaveBeenCalled());
+    openURL.mockRestore();
+    warn.mockRestore();
+  });
+
+  it('still long-presses to delete a location message', () => {
+    const onLongPress = jest.fn();
+    render(
+      <ThemeProvider>
+        <MessageBubble
+          message={message({ type: 'location', text: '', latitude: 51.5, longitude: -0.12 })}
+          isMine
+          status="sent"
+          onLongPress={onLongPress}
+        />
+      </ThemeProvider>,
+    );
+
+    fireEvent(screen.getByLabelText('Open location in maps'), 'longPress');
+
+    expect(onLongPress).toHaveBeenCalled();
   });
 });
