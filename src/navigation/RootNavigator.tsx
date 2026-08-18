@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAuthState } from '../features/auth/hooks/useAuthState';
 import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
 import { useProfileSetupStatus } from '../features/profile/hooks/useProfileSetupStatus';
+import { usePushRegistration } from '../features/notifications/hooks/usePushRegistration';
 import { usePresenceReporter } from '../features/presence/hooks/usePresenceReporter';
 import { useSyncUserProfile } from '../features/profile/hooks/useSyncUserProfile';
 import { ProfileSetupScreen } from '../features/profile/screens/ProfileSetupScreen';
@@ -30,6 +31,9 @@ export function RootNavigator() {
   // Mounted here rather than on a screen so the heartbeat continues wherever
   // the user navigates.
   usePresenceReporter(authUser?.uid, authUser?.email);
+  // Registers this device for push while signed in, and drops the token on
+  // sign out so the phone stops receiving that account's messages.
+  usePushRegistration(authUser?.uid);
 
   const needsProfileStatus = !!authUser?.emailVerified && !authUser?.photoURL;
   const { hasSkipped, loading: profileStatusLoading, markSkipped } = useProfileSetupStatus(

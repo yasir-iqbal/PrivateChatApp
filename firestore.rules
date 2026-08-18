@@ -47,6 +47,13 @@ service cloud.firestore {
       match /blocked/{blockedUid} {
         allow read, write: if isOwner(uid);
       }
+
+      // Push tokens for this user's devices. Owner-only: a token is enough to
+      // send someone notifications, so nobody else may read or add one. The
+      // Cloud Function reads them through the Admin SDK, which bypasses rules.
+      match /pushTokens/{token} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     // Email -> uid, keyed by the address so lookup is a get, not a query.

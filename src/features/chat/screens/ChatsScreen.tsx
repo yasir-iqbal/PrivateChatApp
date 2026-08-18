@@ -6,6 +6,7 @@ import { ScreenContainer } from '../../../shared/components';
 import { useTheme } from '../../../shared/theme';
 import type { AuthUser } from '../../auth/domain/authUser';
 import { ContactAvatar } from '../../contacts/components/ContactAvatar';
+import { useNotificationNavigation } from '../../notifications/hooks/useNotificationNavigation';
 import type { MainStackParamList } from '../../contacts/screens/MainStackParamList';
 import { useConversations, type ConversationRow } from '../hooks/useConversations';
 import { useDeliveryReporter } from '../hooks/useDeliveryReporter';
@@ -38,6 +39,11 @@ export function ChatsScreen({ navigation, authUser }: Props) {
   // The list is open whenever the app is, which is what lets delivery be
   // reported before the recipient opens the conversation.
   useDeliveryReporter(authUser.uid, conversations);
+  // Lives on the stack root, which stays mounted, so a tapped notification
+  // opens the conversation whichever screen the app was showing.
+  useNotificationNavigation(true, (target) =>
+    navigation.navigate('Chat', { contactUid: target.contactUid, contactName: target.contactName }),
+  );
 
   function renderRow({ item }: { item: ConversationRow }) {
     const name = rowName(item);

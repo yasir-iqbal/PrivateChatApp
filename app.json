@@ -65,7 +65,8 @@
           "locationWhenInUsePermission": "Allow PrivateChat to access your location so you can share it in a chat.",
           "isAndroidBackgroundLocationEnabled": false
         }
-      ]
+      ],
+      "@react-native-firebase/messaging"
     ],
     "extra": {
       "googleWebClientId": "313451247671-k023p2n390iujg6lmduuj7ri23kb5sqt.apps.googleusercontent.com",
