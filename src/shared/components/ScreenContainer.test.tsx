@@ -1,18 +1,30 @@
 import { act, render, screen } from '@testing-library/react-native';
 import { Keyboard, Platform, StyleSheet, Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ScreenContainer } from './ScreenContainer';
 import { ThemeProvider } from '../theme';
 
 type Handler = (event: { endCoordinates: { height: number } }) => void;
 
+// The navigation bar. Android reports the keyboard height with this already
+// subtracted, so the padding the container ends up with is the sum of the two.
+const BOTTOM_INSET = 24;
+
 function renderContainer(style?: object) {
   render(
-    <ThemeProvider>
-      <ScreenContainer style={style}>
-        <Text>Hello</Text>
-      </ScreenContainer>
-    </ThemeProvider>,
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 24, left: 0, right: 0, bottom: BOTTOM_INSET },
+      }}
+    >
+      <ThemeProvider>
+        <ScreenContainer style={style}>
+          <Text>Hello</Text>
+        </ScreenContainer>
+      </ThemeProvider>
+    </SafeAreaProvider>,
   );
 }
 
@@ -52,7 +64,7 @@ describe('ScreenContainer', () => {
       renderContainer();
       act(() => handlers.keyboardDidShow?.({ endCoordinates: { height: 300 } }));
 
-      expect(paddingBottomOf()).toBe(300);
+      expect(paddingBottomOf()).toBe(300 + BOTTOM_INSET);
     } finally {
       Object.defineProperty(Platform, 'OS', { value: original, configurable: true });
     }
@@ -67,7 +79,7 @@ describe('ScreenContainer', () => {
       renderContainer({ paddingBottom: 4 });
       act(() => handlers.keyboardDidShow?.({ endCoordinates: { height: 300 } }));
 
-      expect(paddingBottomOf()).toBe(300);
+      expect(paddingBottomOf()).toBe(300 + BOTTOM_INSET);
     } finally {
       Object.defineProperty(Platform, 'OS', { value: original, configurable: true });
     }
