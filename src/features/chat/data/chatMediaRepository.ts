@@ -133,7 +133,10 @@ export const nativeChatMediaRepository: ChatMediaRepository = {
 
   uploadImage: (conversationId, localUri) => upload(conversationId, localUri, 'jpg', 'image/jpeg'),
   uploadVideo: (conversationId, localUri) => upload(conversationId, localUri, 'mp4', 'video/mp4'),
-  uploadVoice: (conversationId, localUri) => upload(conversationId, localUri, 'm4a', 'audio/m4a'),
+  // audio/mp4, not audio/m4a: the latter is not a registered MIME type, and
+  // strict players reject a response they cannot type. The .m4a extension is
+  // kept because that is what the recorder produces.
+  uploadVoice: (conversationId, localUri) => upload(conversationId, localUri, 'm4a', 'audio/mp4'),
 
   async getCurrentPosition() {
     const permission = await Location.requestForegroundPermissionsAsync();
